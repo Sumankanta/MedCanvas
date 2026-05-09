@@ -1,6 +1,6 @@
 <div align="center">
   <br />
-  <img src="src/assets/hero.png" alt="MedCanvas Banner" width="100%" style="border-radius: 12px" />
+  <img src="src/assets/hero.png" alt="MedCanvas Banner" width="50%" style="border-radius: 12px" />
   <br /><br />
 
   <h1>🏥 MedCanvas</h1>
