@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import TopBar from './components/layout/TopBar'
 import LeftPanel from './components/layout/LeftPanel'
 import CanvasArea from './components/canvas/CanvasArea'
@@ -8,10 +10,24 @@ import { useDashboardData } from './hooks/useDashboardData'
 // ── Counters ────────────────────────────────────────────────────────────────
 let blockCounter   = 0
 let sectionCounter = 0
+const STORAGE_KEY = 'medical_dashboard_layout_v1'
 
 function nextBlockId()   { blockCounter   += 1; return `block-${blockCounter}`   }
 function nextSectionId() { sectionCounter += 1; return `section-${sectionCounter}` }
 function resetSectionCounter() { sectionCounter = 0 }
+
+function syncCountersFromSections(sections) {
+  const sectionNums = sections
+    .map((s) => Number(String(s.id || '').split('-')[1]))
+    .filter((n) => Number.isFinite(n))
+  const blockNums = sections
+    .flatMap((s) => (s.blocks || []))
+    .map((b) => Number(String(b.id || '').split('-')[1]))
+    .filter((n) => Number.isFinite(n))
+
+  sectionCounter = sectionNums.length ? Math.max(...sectionNums) : 0
+  blockCounter = blockNums.length ? Math.max(...blockNums) : 0
+}
 
 // ── Default props ────────────────────────────────────────────────────────────
 const DEFAULT_BLOCK_PROPS = {
@@ -50,6 +66,55 @@ function makeBlock(type) {
   }
 }
 
+function defaultBlockSize(type) {
+  if (type?.startsWith('stat-')) return { width: 300, height: 180 }
+  return { width: 360, height: 380 }
+}
+
+function overlaps(a, b) {
+  return !(
+    a.x + a.width <= b.x ||
+    b.x + b.width <= a.x ||
+    a.y + a.height <= b.y ||
+    b.y + b.height <= a.y
+  )
+}
+
+function findFreeSpot(existingBlocks, type) {
+  const canvasWidth = 1120
+  const padding = 16
+  const gap = 12
+  const scanStep = 12
+  const size = defaultBlockSize(type)
+  const w = Math.max(180, size.width)
+  const h = Math.max(120, size.height)
+
+  const occupied = existingBlocks.map((b) => {
+    const s = defaultBlockSize(b.type)
+    return {
+      x: Number(b.props?.x ?? padding),
+      y: Number(b.props?.y ?? padding),
+      width: Number(b.props?.width ?? s.width),
+      height: Number(b.props?.height ?? s.height),
+    }
+  })
+
+  const maxY = Math.max(
+    240,
+    ...occupied.map((o) => o.y + o.height + gap),
+  )
+
+  for (let y = padding; y <= maxY + 1600; y += scanStep) {
+    for (let x = padding; x <= Math.max(padding, canvasWidth - w - padding); x += scanStep) {
+      const candidate = { x, y, width: w, height: h }
+      const hit = occupied.some((o) => overlaps(candidate, o))
+      if (!hit) return { x, y }
+    }
+  }
+
+  return { x: padding, y: maxY + gap }
+}
+
 function makeSection(title = '', blockType = null) {
   const firstBlock = blockType ? makeBlock(blockType) : null
   return {
@@ -59,6 +124,80 @@ function makeSection(title = '', blockType = null) {
     blocks:     firstBlock ? [firstBlock] : [],
     colSpanMap: firstBlock ? { [firstBlock.id]: { col: 0, colSpan: 1 } } : {},
   }
+}
+
+function getDefaultDashboardState() {
+  return { sections: [], history: [[]], index: 0 }
+}
+
+function loadDashboardState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return getDefaultDashboardState()
+    const parsed = JSON.parse(raw)
+    const sections = Array.isArray(parsed?.sections) ? parsed.sections : []
+    syncCountersFromSections(sections)
+    return {
+      sections,
+      history: [JSON.parse(JSON.stringify(sections))],
+      index: 0,
+    }
+  } catch {
+    return getDefaultDashboardState()
+  }
+}
+
+function createTemplateSections(templateId) {
+  resetSectionCounter()
+  blockCounter = 0
+
+  const chart = (type, x, y, width, height, title) => ({
+    id: nextBlockId(),
+    type,
+    props: {
+      ...DEFAULT_BLOCK_PROPS,
+      title,
+      x,
+      y,
+      width,
+      height,
+    },
+  })
+
+  if (templateId === 'kpi') {
+    const s1 = { id: nextSectionId(), title: 'KPI Overview', cols: 12, blocks: [], colSpanMap: {} }
+    s1.blocks = [
+      chart('stat-total', 16, 16, 280, 170, 'Total Patients'),
+      chart('stat-positive', 312, 16, 280, 170, 'Positive Cases'),
+      chart('stat-normal', 608, 16, 280, 170, 'Normal / Clear'),
+      chart('stat-tests', 904, 16, 280, 170, 'Tests Conducted'),
+      chart('chart-line', 16, 206, 580, 360, 'Screening Trend'),
+      chart('chart-bar', 612, 206, 572, 360, 'Daily Screenings'),
+    ]
+    return [s1]
+  }
+
+  if (templateId === 'compare') {
+    const s1 = { id: nextSectionId(), title: 'Comparison Layout', cols: 12, blocks: [], colSpanMap: {} }
+    s1.blocks = [
+      chart('chart-bar', 16, 16, 370, 350, 'Camp A'),
+      chart('chart-bar', 402, 16, 370, 350, 'Camp B'),
+      chart('chart-bar', 788, 16, 370, 350, 'Camp C'),
+      chart('chart-line', 16, 382, 564, 330, 'Weekly Trend'),
+      chart('chart-area', 596, 382, 562, 330, 'Outcome Trend'),
+    ]
+    return [s1]
+  }
+
+  const s1 = { id: nextSectionId(), title: 'Starter Dashboard', cols: 12, blocks: [], colSpanMap: {} }
+  s1.blocks = [
+    chart('chart-bar', 16, 16, 360, 340, 'Screenings by Day'),
+    chart('chart-line', 392, 16, 360, 340, 'Trend'),
+    chart('chart-donut', 768, 16, 390, 340, 'Test Type Split'),
+    chart('stat-total', 16, 372, 360, 180, 'Total Patients'),
+    chart('chart-area', 392, 372, 766, 340, 'Screening Outcomes'),
+  ]
+  return [s1]
 }
 
 // ── Flat block lookup helpers ────────────────────────────────────────────────
@@ -82,18 +221,24 @@ function findSectionForBlock(sections, blockId) {
 export default function App() {
   const { data, loading, lastUpdated, refetch, isRefreshing } = useDashboardData()
 
-  const [dashboardState, setDashboardState] = useState({
-    sections: [],
-    history: [[]],
-    index: 0
-  })
+  const [dashboardState, setDashboardState] = useState(loadDashboardState)
   const [selectedId, setSelectedId] = useState(null)
   const [cols,       setCols]       = useState(2)
   const [leftOpen,   setLeftOpen]   = useState(true)
   const [rightOpen,  setRightOpen]  = useState(true)
   const [zoom,       setZoom]       = useState(100)
+  const [isExporting, setIsExporting] = useState(false)
+  const rootRef = useRef(null)
 
   const { sections, history, index } = dashboardState
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sections }))
+    } catch {
+      // ignore storage failures
+    }
+  }, [sections])
 
   // ── History Helpers ────────────────────────────────────────────────────────
   const pushState = useCallback((newSections) => {
@@ -167,11 +312,20 @@ export default function App() {
     setSelectedId(null)
   }, [])
 
-  const updateSection = useCallback((sectionId, patch) => {
+  const updateSection = useCallback((sectionId, patch, options = {}) => {
+    const skipHistory = Boolean(options?.skipHistory)
     setDashboardState((prev) => {
       const nextSections = prev.sections.map((s) =>
         s.id === sectionId ? { ...s, ...patch } : s,
       )
+
+      if (skipHistory) {
+        return {
+          ...prev,
+          sections: nextSections,
+        }
+      }
+
       const truncated = prev.history.slice(0, prev.index + 1)
       const nextHistory = [...truncated, JSON.parse(JSON.stringify(nextSections))]
       return {
@@ -206,17 +360,22 @@ export default function App() {
   const addBlockToSection = useCallback((sectionId, type, _colIndex = 0, initialPos = null) => {
     setDashboardState((prev) => {
       const newBlock = makeBlock(type)
-      if (initialPos && typeof initialPos === 'object') {
-        newBlock.props = {
-          ...newBlock.props,
-          x: Number(initialPos.x ?? 16),
-          y: Number(initialPos.y ?? 16),
-        }
-      }
       const nextSections = prev.sections.map((s) => {
         if (s.id !== sectionId) return s
         const colSpanMap  = s.colSpanMap || {}
         const blocks      = s.blocks || []
+        const autoPos = initialPos && typeof initialPos === 'object'
+          ? {
+            x: Number(initialPos.x ?? 16),
+            y: Number(initialPos.y ?? 16),
+          }
+          : findFreeSpot(blocks, type)
+
+        newBlock.props = {
+          ...newBlock.props,
+          x: autoPos.x,
+          y: autoPos.y,
+        }
 
         const newColSpanMap = { ...colSpanMap, [newBlock.id]: { col: 0, colSpan: 6 } }
         return { ...s, blocks: [...blocks, newBlock], colSpanMap: newColSpanMap }
@@ -298,7 +457,8 @@ export default function App() {
   /**
    * Update props on a block.
    */
-  const updateBlockProps = useCallback((blockId, patch) => {
+  const updateBlockProps = useCallback((blockId, patch, options = {}) => {
+    const skipHistory = Boolean(options?.skipHistory)
     setDashboardState((prev) => {
       const nextSections = prev.sections.map((s) => {
         const blockIdx = s.blocks.findIndex(b => b.id === blockId);
@@ -322,6 +482,13 @@ export default function App() {
           ),
         };
       });
+
+      if (skipHistory) {
+        return {
+          ...prev,
+          sections: nextSections,
+        }
+      }
 
       const truncated = prev.history.slice(0, prev.index + 1)
       const nextHistory = [...truncated, JSON.parse(JSON.stringify(nextSections))]
@@ -442,6 +609,12 @@ export default function App() {
   // ── Clear ──────────────────────────────────────────────────────────────────
   const clearCanvas = useCallback(() => {
     resetSectionCounter()
+    blockCounter = 0
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // ignore storage failures
+    }
     setDashboardState((prev) => {
       const nextSections = []
       const truncated = prev.history.slice(0, prev.index + 1)
@@ -455,6 +628,68 @@ export default function App() {
     })
     setSelectedId(null)
   }, [])
+
+  const applyTemplate = useCallback((templateId = 'starter') => {
+    const key = String(templateId).trim().toLowerCase()
+    const normalized = key === 'kpi' || key === 'compare' ? key : 'starter'
+    const templateSections = createTemplateSections(normalized)
+    pushState(templateSections)
+    setSelectedId(templateSections[0]?.blocks?.[0]?.id || null)
+  }, [pushState])
+
+  const exportDashboard = useCallback(async (format = 'pdf') => {
+    if (isExporting) return
+    const target = rootRef.current?.querySelector('.canvas-dropzone')
+    if (!target) return
+
+    try {
+      setIsExporting(true)
+      document.body.classList.add('is-exporting')
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+      const width = Math.ceil(target.scrollWidth || target.clientWidth || 1280)
+      const height = Math.ceil(target.scrollHeight || target.clientHeight || 720)
+
+      const canvas = await html2canvas(target, {
+        backgroundColor: '#020817',
+        scale: Math.min(2, window.devicePixelRatio || 1.5),
+        useCORS: true,
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        scrollX: 0,
+        scrollY: 0,
+      })
+
+      const fileStamp = new Date().toISOString().replace(/[:.]/g, '-')
+
+      if (format === 'jpg') {
+        const jpg = canvas.toDataURL('image/jpeg', 0.95)
+        const a = document.createElement('a')
+        a.href = jpg
+        a.download = `medical-dashboard-${fileStamp}.jpg`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        return
+      }
+
+      const imgW = canvas.width
+      const imgH = canvas.height
+      const orientation = imgW >= imgH ? 'landscape' : 'portrait'
+      const pdf = new jsPDF({
+        orientation,
+        unit: 'px',
+        format: [imgW, imgH],
+      })
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH)
+      pdf.save(`medical-dashboard-${fileStamp}.pdf`)
+    } finally {
+      document.body.classList.remove('is-exporting')
+      setIsExporting(false)
+    }
+  }, [isExporting])
 
   // ── Keyboard ───────────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e) => {
@@ -481,6 +716,7 @@ export default function App() {
 
   return (
     <div
+      ref={rootRef}
       className="builder-root"
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -505,6 +741,9 @@ export default function App() {
         rightOpen={rightOpen}
         onToggleLeft={() => setLeftOpen((o) => !o)}
         onToggleRight={() => setRightOpen((o) => !o)}
+        onApplyTemplate={applyTemplate}
+        onExport={exportDashboard}
+        isExporting={isExporting}
       />
 
       <div className="workspace">

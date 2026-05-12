@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown, ChevronRight, GripVertical, Plus,
   Trash2, Pencil, Check, X as XIcon, BarChart3,
@@ -14,13 +14,110 @@ function defaultSize(type) {
   return { w: 360, h: 380 }
 }
 
-function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef }) {
+function rectOverlaps(a, b) {
+  return !(
+    a.x + a.w <= b.x ||
+    b.x + b.w <= a.x ||
+    a.y + a.h <= b.y ||
+    b.y + b.h <= a.y
+  )
+}
+
+function resolveNoOverlap(candidate, others) {
+  const step = 12
+  const next = { ...candidate }
+  let guard = 0
+  while (others.some((r) => rectOverlaps(next, r)) && guard < 500) {
+    next.y += step
+    guard += 1
+  }
+  return next
+}
+
+function packWithoutOverlap(items, canvasWidth) {
+  const padding = 12
+  const gap = 12
+  const step = 12
+  const maxW = Math.max(220, canvasWidth - (padding * 2))
+  const placed = []
+  const out = []
+
+  const sorted = [...items].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+
+  for (const item of sorted) {
+    const w = Math.max(180, Math.min(item.w, maxW))
+    const h = Math.max(120, item.h)
+    const maxX = Math.max(padding, canvasWidth - w - padding)
+
+    let found = null
+    const startY = Math.max(padding, item.y)
+    const endY = startY + 2600
+    for (let y = startY; y <= endY && !found; y += step) {
+      for (let x = padding; x <= maxX; x += step) {
+        const cand = { id: item.id, x, y, w, h }
+        if (!placed.some((p) => rectOverlaps(cand, p))) {
+          found = cand
+          break
+        }
+      }
+    }
+
+    if (!found) {
+      const bottom = placed.reduce((m, p) => Math.max(m, p.y + p.h), padding)
+      found = { id: item.id, x: padding, y: bottom + gap, w, h }
+    }
+
+    placed.push(found)
+    out.push(found)
+  }
+
+  return out
+}
+
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
-  const x = Number(props.x ?? 16)
-  const y = Number(props.y ?? 16)
-  const w = Number(props.width ?? defaults.w)
-  const h = Number(props.height ?? defaults.h)
+  const [liveRect, setLiveRect] = useState({
+    x: Number(props.x ?? 16),
+    y: Number(props.y ?? 16),
+    w: Number(props.width ?? defaults.w),
+    h: Number(props.height ?? defaults.h),
+  })
+
+  const x = liveRect.x
+  const y = liveRect.y
+  const w = liveRect.w
+  const h = liveRect.h
+  const liveRectRef = useRef(liveRect)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+
+  useEffect(() => {
+    setLiveRect({
+      x: Number(props.x ?? 16),
+      y: Number(props.y ?? 16),
+      w: Number(props.width ?? defaults.w),
+      h: Number(props.height ?? defaults.h),
+    })
+  }, [props.x, props.y, props.width, props.height, defaults.w, defaults.h])
+
+  useEffect(() => {
+    liveRectRef.current = liveRect
+  }, [liveRect])
+
+  useEffect(() => {
+    if (!canvasWidth || canvasWidth <= 0) return
+    const maxW = Math.max(180, canvasWidth - 16)
+    const nextW = clamp(liveRectRef.current.w, 180, maxW)
+    const nextX = clamp(liveRectRef.current.x, 0, Math.max(0, canvasWidth - nextW))
+    if (nextW !== liveRectRef.current.w || nextX !== liveRectRef.current.x) {
+      const next = { ...liveRectRef.current, w: nextW, x: nextX }
+      liveRectRef.current = next
+      setLiveRect(next)
+      onUpdateBlock(block.id, { x: nextX, width: nextW }, { skipHistory: true })
+    }
+  }, [block.id, canvasWidth, onUpdateBlock])
 
   function onDragStart(e) {
     e.preventDefault()
@@ -31,6 +128,7 @@ function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onU
     const startY = e.clientY
     const startLeft = x
     const startTop = y
+    setIsDragging(true)
 
     function move(ev) {
       const canvas = canvasRef.current
@@ -38,10 +136,18 @@ function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onU
       if (!rect) return
       const nextX = clamp(startLeft + (ev.clientX - startX), 0, Math.max(0, rect.width - w))
       const nextY = clamp(startTop + (ev.clientY - startY), 0, 3000)
-      onUpdateBlock(block.id, { x: Math.round(nextX), y: Math.round(nextY) })
+      const placed = resolveNoOverlap({ x: Math.round(nextX), y: Math.round(nextY), w, h }, otherRects)
+      setLiveRect((prev) => ({
+        ...prev,
+        x: placed.x,
+        y: placed.y,
+      }))
     }
 
     function up() {
+      const finalRect = liveRectRef.current
+      onUpdateBlock(block.id, { x: finalRect.x, y: finalRect.y })
+      setIsDragging(false)
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
     }
@@ -59,14 +165,24 @@ function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onU
     const startY = e.clientY
     const startW = w
     const startH = h
+    setIsResizing(true)
 
     function move(ev) {
       const nextW = clamp(startW + (ev.clientX - startX), 180, 1200)
       const nextH = clamp(startH + (ev.clientY - startY), block.type?.startsWith('stat-') ? 120 : 180, 1000)
-      onUpdateBlock(block.id, { width: Math.round(nextW), height: Math.round(nextH) })
+      const placed = resolveNoOverlap({ x, y, w: Math.round(nextW), h: Math.round(nextH) }, otherRects)
+      setLiveRect((prev) => ({
+        ...prev,
+        w: placed.w,
+        h: placed.h,
+        y: placed.y,
+      }))
     }
 
     function up() {
+      const finalRect = liveRectRef.current
+      onUpdateBlock(block.id, { width: finalRect.w, height: finalRect.h })
+      setIsResizing(false)
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
     }
@@ -77,9 +193,11 @@ function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onU
 
   return (
     <div
-      className={`abs-widget${selected ? ' abs-widget--selected' : ''}`}
+      className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
       style={{ left: x, top: y, width: w, height: h }}
       onMouseDown={() => onSelect(block.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="abs-widget-drag" onMouseDown={onDragStart} title="Drag to move">
         <GripVertical size={12} />
@@ -102,7 +220,7 @@ function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onU
       </div>
     </div>
   )
-}
+})
 
 export default function CanvasSection({
   section, data, selectedId,
@@ -115,7 +233,9 @@ export default function CanvasSection({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(section.title || 'Section')
   const [isDragOver, setIsDragOver] = useState(false)
+  const [canvasWidth, setCanvasWidth] = useState(0)
   const canvasRef = useRef(null)
+  const isPackingRef = useRef(false)
 
   const blocks = section.blocks || []
 
@@ -129,6 +249,62 @@ export default function CanvasSection({
     }, 0)
     return Math.max(260, maxBottom + 16)
   }, [blocks])
+
+  useEffect(() => {
+    const node = canvasRef.current
+    if (!node) return undefined
+
+    const update = () => setCanvasWidth(node.clientWidth || 0)
+    update()
+
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [blocks.length, collapsed])
+
+  useEffect(() => {
+    if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1 || isPackingRef.current) return
+
+    const current = blocks.map((b) => {
+      const d = defaultSize(b.type)
+      return {
+        id: b.id,
+        x: Number(b.props?.x ?? 16),
+        y: Number(b.props?.y ?? 16),
+        w: Number(b.props?.width ?? d.w),
+        h: Number(b.props?.height ?? d.h),
+      }
+    })
+
+    const packed = packWithoutOverlap(current, canvasWidth)
+    const changes = packed.filter((p) => {
+      const c = current.find((x) => x.id === p.id)
+      return !c || c.x !== p.x || c.y !== p.y || c.w !== p.w
+    })
+    if (changes.length === 0) return
+
+    const packedById = Object.fromEntries(packed.map((p) => [p.id, p]))
+    const nextBlocks = blocks.map((b) => {
+      const p = packedById[b.id]
+      if (!p) return b
+      return {
+        ...b,
+        props: {
+          ...b.props,
+          x: p.x,
+          y: p.y,
+          width: p.w,
+        },
+      }
+    })
+
+    isPackingRef.current = true
+    onUpdateSection(section.id, { blocks: nextBlocks }, { skipHistory: true })
+    const timer = window.setTimeout(() => {
+      isPackingRef.current = false
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [blocks, canvasWidth, onUpdateSection, section.id])
 
   function handleSectionDrop(e) {
     e.preventDefault()
@@ -235,6 +411,20 @@ export default function CanvasSection({
               onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
             >
               {blocks.map((block) => (
+                (() => {
+                  const d = defaultSize(block.type)
+                  const otherRects = blocks
+                    .filter((b) => b.id !== block.id)
+                    .map((b) => {
+                      const bd = defaultSize(b.type)
+                      return {
+                        x: Number(b.props?.x ?? 16),
+                        y: Number(b.props?.y ?? 16),
+                        w: Number(b.props?.width ?? bd.w),
+                        h: Number(b.props?.height ?? bd.h),
+                      }
+                    })
+                  return (
                 <BlockItem
                   key={block.id}
                   block={block}
@@ -245,7 +435,11 @@ export default function CanvasSection({
                   onDuplicate={() => onDuplicateBlock(block.id, section.id)}
                   onUpdateBlock={onUpdateBlock}
                   canvasRef={canvasRef}
+                  canvasWidth={canvasWidth}
+                  otherRects={otherRects}
                 />
+                  )
+                })()
               ))}
             </div>
           )}
