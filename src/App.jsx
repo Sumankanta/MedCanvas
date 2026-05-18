@@ -127,7 +127,9 @@ function makeSection(title = '', blockType = null) {
 }
 
 function getDefaultDashboardState() {
-  return { sections: [], history: [[]], index: 0 }
+  const defaultSections = createTemplateSections('starter')
+  syncCountersFromSections(defaultSections)
+  return { sections: defaultSections, history: [JSON.parse(JSON.stringify(defaultSections))], index: 0 }
 }
 
 function loadDashboardState() {
@@ -198,7 +200,7 @@ function createTemplateSections(templateId) {
     chart('chart-line', 12, 120, 256, 220, 'Patients Screened Over Time'),
     chart('chart-donut', 276, 120, 256, 220, 'Screening Outcome Distribution'),
     chart('table', 12, 352, 256, 230, 'Recent Screening Drives'),
-    chart('chart-bar', 276, 352, 256, 230, 'Tests Conducted by Type'),
+    chart('chart-hbar', 276, 352, 256, 230, 'Tests Conducted by Type'),
   ]
   return [s1]
 }
@@ -783,6 +785,11 @@ export default function App() {
           moveBlockBetweenSections={moveBlockBetweenSections}
           cols={cols}
           zoom={zoom}
+          onZoom={setZoom}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={index > 0}
+          canRedo={index < history.length - 1}
         />
 
         <LeftPanel

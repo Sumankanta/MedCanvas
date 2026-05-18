@@ -2121,7 +2121,6 @@ body {
   border-color: transparent;
 }
 
-.card-action-btn.dup,
 .card-action-btn.remove {
   display: none;
 }
@@ -3609,7 +3608,6 @@ body {
   border-color: transparent !important;
 }
 
-.card-action-btn.dup,
 .card-action-btn.remove {
   display: none !important;
 }
@@ -3732,8 +3730,6 @@ body {
   justify-content: flex-end;
 }
 
-.responsive-switcher,
-.zoom-group,
 .topbar-right > .tb-btn {
   display: none !important;
 }
@@ -4291,4 +4287,408 @@ body {
   .canvas-surface {
     min-width: 720px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Widget Properties Panel (Right Side) — matches PHC screenshot
+   ═══════════════════════════════════════════════════════════════ */
+
+.wp-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.wp-label {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.wp-widget-type-plain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wp-widget-type-icon-green {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #62c3b2; /* Matches the green/teal in screenshot */
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.wp-widget-type-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d2939;
+}
+
+.wp-widget-type-desc {
+  font-size: 10px;
+  color: #667085;
+  margin-top: 1px;
+}
+
+.wp-input {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  background: #fff;
+  color: #344054;
+  font-size: 12px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.wp-input:focus {
+  border-color: #98c5ee;
+  box-shadow: 0 0 0 2px rgba(29, 116, 216, 0.08);
+}
+
+.wp-input-sm {
+  min-height: 28px;
+  font-size: 11px;
+}
+
+.wp-select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  background: #fff;
+  color: #344054;
+  font-size: 12px;
+  padding: 0 8px;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.wp-select:focus {
+  border-color: #98c5ee;
+}
+
+.wp-select-sm {
+  min-height: 28px;
+  font-size: 11px;
+}
+
+.wp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wp-row-label {
+  flex: 1;
+  font-size: 11px;
+  color: #344054;
+}
+
+.wp-icon-preview-blue {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.wp-change-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  background: #fff;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wp-change-btn:hover {
+  background: #f9fafb;
+  border-color: #d0d5dd;
+}
+
+.wp-color-swatch-blue {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #3b82f6;
+}
+
+.wp-color-swatch-green {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: #10b981;
+}
+
+.wp-color-swatch-red {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: #ef4444;
+}
+
+.wp-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.wp-placeholder-text {
+  margin: 0;
+  color: #98a2b3;
+  font-size: 11px;
+  padding: 4px 0 4px 24px;
+}
+
+.wp-delete-btn-flat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.wp-delete-btn-flat:hover {
+  opacity: 0.8;
+}
+
+/* Accordion Sections */
+.prop-section-accordion {
+  border-bottom: 1px solid #eaecf0;
+}
+
+.prop-section-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: #1d2939;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.prop-section-accordion-header:hover {
+  background: #f9fafb;
+}
+
+.prop-section-accordion-body {
+  padding: 0 14px 10px;
+}
+
+/* Table Pagination */
+.pt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-top: 1px solid #eaecf0;
+}
+
+.pt-page-info {
+  font-size: 9px;
+  color: #98a2b3;
+}
+
+.pt-page-btns {
+  display: flex;
+  gap: 3px;
+}
+
+.pt-page-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eaecf0;
+  border-radius: 3px;
+  background: #fff;
+  color: #475467;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.pt-page-btn.active {
+  background: #eff8ff;
+  border-color: #98c5ee;
+  color: #175cd3;
+  font-weight: 700;
+}
+
+/* Panel mode select (hide old) */
+.panel-mode-select-wrap {
+  display: none;
+}
+
+/* No selection state fix */
+.no-selection {
+  padding: 40px 14px;
+}
+
+.no-selection-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  color: #98a2b3;
+}
+
+.no-selection-text {
+  color: #667085;
+  font-size: 12px;
+}
+
+/* Toggle in WP panel */
+.wp-section .prop-toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid #d0d5dd;
+  background: #f2f4f7;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wp-section .prop-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.2);
+  transition: transform 0.15s;
+}
+
+.wp-section .prop-toggle.on {
+  background: #1570ef;
+  border-color: #1570ef;
+}
+
+.wp-section .prop-toggle.on::after {
+  transform: translateX(16px);
+}
+
+/* Row/column breadcrumb bar at bottom */
+.panel-toggle-btn {
+  height: 30px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  background: #fff;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.panel-toggle-btn.active {
+  border-color: #98c5ee;
+  background: #eff8ff;
+  color: #175cd3;
+}
+
+.responsive-switcher {
+  display: flex;
+}
+
+/* Template popover */
+.template-popover {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  width: 280px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
+  z-index: 100;
+  padding: 8px;
+}
+
+.template-popover-head {
+  padding: 8px 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d2939;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.template-card {
+  border: 1px solid #eaecf0;
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 8px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.template-card:hover {
+  background: #eff8ff;
+  border-color: #98c5ee;
+}
+
+.template-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.template-preview span {
+  height: 14px;
+  background: #e4e7ec;
+  border-radius: 2px;
+}
+
+.template-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #344054;
+}
+
+.template-desc {
+  font-size: 9px;
+  color: #98a2b3;
+  margin-top: 2px;
+}
+
+.template-pop-wrap {
+  position: relative;
 }

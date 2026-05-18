@@ -205,9 +205,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="abs-widget-drag" onMouseDown={onDragStart} title="Drag to move">
-        <GripVertical size={12} />
-      </div>
+
 
       <CanvasBlock
         block={block}
@@ -215,6 +213,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
         selected={selected}
         onRemove={onRemove}
         onDuplicate={onDuplicate}
+        onDragStart={onDragStart}
         onSelect={() => onSelect(block.id)}
       />
 

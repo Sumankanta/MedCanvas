@@ -55,31 +55,7 @@ export default function TopBar({
       </div>
 
       <div className="topbar-right">
-        <div className="toolbar-group responsive-switcher">
-          <button className="tb-btn active" title="Desktop"><Monitor size={14} /></button>
-          <button className="tb-btn" title="Tablet"><Tablet size={14} /></button>
-          <button className="tb-btn" title="Mobile"><Smartphone size={14} /></button>
-        </div>
 
-        <div className="toolbar-group">
-          <button className="tb-btn" onClick={onUndo} disabled={!canUndo} title="Undo" style={{ opacity: canUndo ? 1 : 0.35 }}>
-            <Undo size={14} />
-          </button>
-          <button className="tb-btn" onClick={onRedo} disabled={!canRedo} title="Redo" style={{ opacity: canRedo ? 1 : 0.35 }}>
-            <Redo size={14} />
-          </button>
-        </div>
-
-        <div className="toolbar-group zoom-group">
-          <button className="tb-btn" onClick={() => onZoom((z) => Math.max(50, z - 10))} title="Zoom out">
-            <Minus size={14} />
-          </button>
-          <span className="zoom-display">{zoom}%</span>
-          <button className="tb-btn" onClick={() => onZoom((z) => Math.min(150, z + 10))} title="Zoom in">
-            <ZoomIn size={14} />
-          </button>
-          <button className="fit-btn" onClick={() => onZoom(100)}>Fit Width</button>
-        </div>
 
         <button className={`panel-toggle-btn ${leftOpen ? 'active' : ''}`} onClick={onToggleLeft} title={leftOpen ? 'Hide widgets panel' : 'Show widgets panel'}>
           <PanelLeft size={14} />

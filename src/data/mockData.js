@@ -64,39 +64,17 @@ export const campLocationData = [
   { camp: 'Camp J', screened: 75, positive: 16 },
 ]
 
-// Generate 1000 Patients Automatically
-
-const firstNames = [
-  'Rahul','Priya','Amit','Sneha','Rakesh','Sunita','Pooja','Deepak',
-  'Anjali','Suresh','Kiran','Ritu','Manoj','Nikita','Rohan','Meera'
+export const patientTableData = [
+  { id: 1, name: 'Oral Cancer Screening - Guntur Region', location: 'Guntur, AP', date: 'May 30, 2025', screened: 286, positive: 21, referred: 8 },
+  { id: 2, name: 'Community Screening - Vijayawada', location: 'Vijayawada, AP', date: 'May 28, 2025', screened: 452, positive: 47, referred: 26 },
+  { id: 3, name: 'PHC Camp - Prakasam', location: 'Prakasam, AP', date: 'May 27, 2025', screened: 195, positive: 22, referred: 12 },
+  { id: 4, name: 'Mobile Screening Unit - Nellore', location: 'Nellore, AP', date: 'May 26, 2025', screened: 364, positive: 41, referred: 19 },
+  { id: 5, name: 'Community Drive - Chittoor', location: 'Chittoor, AP', date: 'May 24, 2025', screened: 301, positive: 33, referred: 18 },
+  { id: 6, name: 'Rural Health Camp - Kurnool', location: 'Kurnool, AP', date: 'May 22, 2025', screened: 228, positive: 28, referred: 14 },
+  { id: 7, name: 'Tribal Area Screening - Srikakulam', location: 'Srikakulam, AP', date: 'May 20, 2025', screened: 175, positive: 19, referred: 9 },
+  { id: 8, name: 'Urban Health Drive - Visakhapatnam', location: 'Visakhapatnam, AP', date: 'May 18, 2025', screened: 412, positive: 52, referred: 31 },
+  { id: 9, name: 'District Hospital Camp - Anantapur', location: 'Anantapur, AP', date: 'May 16, 2025', screened: 189, positive: 16, referred: 7 },
+  { id: 10, name: 'Mobile Unit - East Godavari', location: 'East Godavari, AP', date: 'May 14, 2025', screened: 267, positive: 33, referred: 15 },
+  { id: 11, name: 'Cancer Awareness Camp - Kadapa', location: 'Kadapa, AP', date: 'May 12, 2025', screened: 143, positive: 11, referred: 5 },
+  { id: 12, name: 'PHC Screening - West Godavari', location: 'West Godavari, AP', date: 'May 10, 2025', screened: 198, positive: 24, referred: 11 },
 ]
-
-const lastNames = [
-  'Kumar','Das','Swain','Patel','Nayak','Mishra','Sethi','Rout',
-  'Behera','Panda','Mohanty','Singh','Roy','Naik'
-]
-
-const tests = [
-  'Oral Exam',
-  'Hb Test',
-  'BMI + BP',
-  'Oral + Hb',
-  'VIA Test',
-  'BP Check',
-]
-
-const locations = [
-  'Camp A','Camp B','Camp C','Camp D','Camp E',
-  'Camp F','Camp G','Camp H','Camp I','Camp J'
-]
-
-export const patientTableData = Array.from({ length: 1000 }, (_, i) => ({
-  id: `P${String(i + 1).padStart(4, '0')}`,
-  name: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
-    lastNames[Math.floor(Math.random() * lastNames.length)]
-  }`,
-  age: Math.floor(Math.random() * 48) + 18,
-  test: tests[Math.floor(Math.random() * tests.length)],
-  outcome: Math.random() > 0.78 ? 'positive' : 'normal',
-  location: locations[Math.floor(Math.random() * locations.length)],
-}))

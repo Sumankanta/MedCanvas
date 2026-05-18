@@ -8,7 +8,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Calendar, Grid2X2, Plus, SlidersHorizontal, Table2 } from 'lucide-react'
+import { Calendar, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, PenLine, ChevronDown } from 'lucide-react'
 import CanvasSection from './CanvasSection'
 
 // ── Sortable wrapper for a section ─────────────────────────────────────────
@@ -42,7 +42,7 @@ export default function CanvasArea({
   onAddSection, onRemoveSection, onUpdateSection, onReorderSections,
   onAddBlockToSection, onReorderBlocksInSection,
   moveBlockBetweenSections,
-  zoom,
+  zoom, onZoom, onUndo, onRedo, canUndo, canRedo,
 }) {
   const [isDragOver,      setIsDragOver]      = useState(false)
   const [activeId,        setActiveId]        = useState(null) // Can be sectionId or blockId
@@ -124,16 +124,47 @@ export default function CanvasArea({
   return (
     <main className="canvas-area">
       <div className="canvas-toolbar">
-        <div className="canvas-toolbar-left">
-          <button className="tb-btn" title="Grid"><Grid2X2 size={14} /></button>
-          <span className="canvas-info">Grid</span>
-          <button className="switch is-on" title="Toggle grid" />
-          <span className="canvas-info">Snap to grid</span>
-          <button className="switch is-on" title="Snap to grid" />
+        <div className="canvas-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="toolbar-group">
+            <button className="tb-btn" onClick={onUndo} disabled={!canUndo} title="Undo" style={{ opacity: canUndo ? 1 : 0.35 }}>
+              <Undo size={14} />
+            </button>
+            <button className="tb-btn" onClick={onRedo} disabled={!canRedo} title="Redo" style={{ opacity: canRedo ? 1 : 0.35 }}>
+              <Redo size={14} />
+            </button>
+          </div>
+          <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
+          <div className="toolbar-group responsive-switcher">
+            <button className="tb-btn active" title="Desktop"><Monitor size={14} /></button>
+            <button className="tb-btn" title="Tablet"><Tablet size={14} /></button>
+            <button className="tb-btn" title="Mobile"><Smartphone size={14} /></button>
+          </div>
         </div>
-        <div className="canvas-toolbar-right">
-          <button className="date-filter"><Calendar size={14} /> This Month (May 1 - May 31, 2025)</button>
-          <button className="date-filter"><SlidersHorizontal size={14} /> Filters</button>
+
+        <div className="canvas-toolbar-center" style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="canvas-info" style={{ margin: 0 }}>Grid</span>
+            <button className="switch is-on" title="Toggle grid" />
+            <span className="canvas-info" style={{ margin: 0, marginLeft: 8 }}>Snap to grid</span>
+            <button className="switch is-on" title="Snap to grid" />
+          </div>
+
+          <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
+
+          <div className="toolbar-group zoom-group">
+            <button className="tb-btn" onClick={() => onZoom && onZoom((z) => Math.max(50, z - 10))} title="Zoom out">
+              <Minus size={14} />
+            </button>
+            <span className="zoom-display">{zoom}%</span>
+            <button className="tb-btn" onClick={() => onZoom && onZoom((z) => Math.min(150, z + 10))} title="Zoom in">
+              <Plus size={14} />
+            </button>
+            <button className="fit-btn" onClick={() => onZoom && onZoom(100)}>Fit Width</button>
+          </div>
+        </div>
+
+        <div className="canvas-toolbar-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Empty right side, moved calendar/filters to dashboard header */}
         </div>
       </div>
 
@@ -146,6 +177,21 @@ export default function CanvasArea({
         onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
       >
         <div className="canvas-surface" style={{ transform: `scale(${zoom / 100})` }}>
+          <div className="dashboard-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '0 8px' }}>
+            <div>
+              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Medical Drive Monitoring Dashboard <PenLine size={14} style={{ color: '#98a2b3', cursor: 'pointer' }} />
+              </h1>
+              <p style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0' }}>
+                Real-time overview of screening drives and outcomes
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="date-filter" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', border: '1px solid #d0d5dd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', color: '#344054', fontWeight: 500, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', cursor: 'pointer' }}><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
+              <button className="date-filter" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', border: '1px solid #d0d5dd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', color: '#344054', fontWeight: 500, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', cursor: 'pointer' }}><SlidersHorizontal size={14} color="#667085" /> Filters</button>
+            </div>
+          </div>
+
           <div className={`canvas-dropzone${isDragOver ? ' drag-over' : ''}`}>
 
             {/* ── Empty State ── */}

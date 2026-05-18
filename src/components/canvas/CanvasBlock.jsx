@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
 } from 'recharts'
-import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical } from 'lucide-react'
 
 const BASE_COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#f97316', '#a78bfa']
 const TOOLTIP_PROPS = {
@@ -12,17 +12,18 @@ const TOOLTIP_PROPS = {
 }
 
 const STAT_META = {
-  'stat-total':     { dataKey: 'totalScreened',  label: 'Total Patients Screened', icon: '👥', defaultColor: '#06b6d4', trend: +8  },
-  'stat-positive':  { dataKey: 'oralCancer',      label: 'Total Positive Cases',    icon: '🩺', defaultColor: '#ef4444', trend: -3  },
+  'stat-total':     { dataKey: 'totalScreened',  label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3  },
+  'stat-positive':  { dataKey: 'oralCancer',      label: 'Positive Cases',          icon: '🩺', defaultColor: '#ef4444', trend: +15.3  },
   'stat-normal':    { dataKey: 'normal',           label: 'Normal / Clear',          icon: '✅', defaultColor: '#10b981', trend: +12 },
   'stat-oral':      { dataKey: 'oralCancer',       label: 'Oral Cancer +ve',         icon: '🦷', defaultColor: '#f97316', trend: -2  },
   'stat-anemia':    { dataKey: 'anemia',           label: 'Anemia +ve',              icon: '💉', defaultColor: '#ec4899', trend: +5  },
-  'stat-locations': { dataKey: 'locations',        label: 'Camp Locations',          icon: '📍', defaultColor: '#8b5cf6', trend: 0   },
-  'stat-tests':     { dataKey: 'testsTotal',       label: 'Tests Conducted',         icon: '🔬', defaultColor: '#f59e0b', trend: +15 },
+  'stat-locations': { dataKey: 'locations',        label: 'Referred',                icon: '📍', defaultColor: '#8b5cf6', trend: +5.1   },
+  'stat-tests':     { dataKey: 'testsTotal',       label: 'Tests Conducted',         icon: '🔬', defaultColor: '#f59e0b', trend: +8.7 },
 }
 
 const CFG = {
   'chart-bar':      { title: 'Screenings by Day',   subtitle: 'Daily breakdown',       color: '#3b82f6' },
+  'chart-hbar':     { title: 'Tests Conducted by Type', subtitle: 'Horizontal breakdown', color: '#3b82f6' },
   'chart-stacked':  { title: 'Stacked Results',     subtitle: 'Positive vs normal',    color: '#8b5cf6' },
   'chart-line':     { title: 'Screening Trend',     subtitle: 'Week overview',         color: '#10b981' },
   'chart-area':     { title: 'Area Trend',           subtitle: 'Cumulative view',       color: '#06b6d4' },
@@ -62,6 +63,8 @@ function seriesOptions(type) {
     case 'chart-line':
     case 'chart-area':
       return { x: ['day'], y: ['screened', 'positive', 'normal'], hasSecondary: true }
+    case 'chart-hbar':
+      return { x: ['name'], y: ['value'], hasSecondary: false }
     case 'chart-stacked':
       return { x: ['day'], y: ['normal', 'positive', 'screened'], hasSecondary: true }
     case 'chart-pie':
@@ -83,38 +86,31 @@ function renderStatBlock(type, data, props) {
   if (!meta) return null
   const varEntry = data?.statVariables?.find((v) => v.key === meta.dataKey)
   const value = varEntry?.value ?? 0
-  const color = props.color
+  const color = props.color || meta.defaultColor
   const trend = meta.trend
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
   const trendColor = trend > 0 ? '#10b981' : trend < 0 ? '#ef4444' : '#64748b'
-  const total = data?.statVariables?.find((v) => v.key === 'totalScreened')?.value ?? 1
-  const pct = type === 'stat-total' ? 100 : Math.round((value / total) * 100)
 
   return (
     <div className="stat-block-render" style={{ '--sb-color': color }}>
       <div className="sb-top">
-        <div className="sb-icon-wrap" style={{ background: `${color}18`, border: `1px solid ${color}33` }}>
+        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28` }}>
           <span className="sb-emoji">{meta.icon}</span>
         </div>
         <div className="sb-value-wrap">
-          <span className="sb-value" style={{ color, fontSize: Math.max(28, props.fontSize + 20), fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, lineHeight: 1 }}>
+          <span className="sb-value" style={{ color: '#1e293b', fontSize: Math.max(26, props.fontSize + 18), fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, lineHeight: 1 }}>
             {value.toLocaleString()}
           </span>
           <div className="sb-trend" style={{ color: trendColor }}>
             <TrendIcon size={11} />
             <span style={{ fontSize: 10, fontWeight: 600 }}>
-              {trend === 0 ? 'No change' : `${trend > 0 ? '+' : ''}${trend}% vs last drive`}
+              {trend === 0 ? 'No change' : `${trend > 0 ? '▲' : '▼'} ${Math.abs(trend)}%`}
             </span>
           </div>
+          <span style={{ fontSize: 9, color: '#94a3b8', marginTop: 1 }}>
+            vs Apr 1 – Apr 30, 2025
+          </span>
         </div>
-      </div>
-      <div className="sb-progress-wrap">
-        <div className="sb-progress-track">
-          <div className="sb-progress-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
-        </div>
-        <span className="sb-progress-label" style={{ color: `${color}cc` }}>
-          {type === 'stat-total' ? '100% of drive' : `${pct}% of total`}
-        </span>
       </div>
     </div>
   )
@@ -183,8 +179,9 @@ function initData(type, data) {
   switch (type) {
     case 'chart-bar': case 'chart-stacked': case 'chart-line': case 'chart-area':
       return clone(data.screeningByDayData)
+    case 'chart-hbar':   return clone(data.testTypeData)
     case 'chart-pie':    return clone(data.outcomeChartData)
-    case 'chart-donut':  return clone(data.testTypeData.map((d) => ({ label: d.name, value: d.value })))
+    case 'chart-donut':  return clone(data.outcomeChartData)
     case 'chart-radialbar': return clone(data.campLocationData)
     case 'chart-scatter':   return clone(data.ageGroupData)
     case 'num':   return clone(data.statVariables)
@@ -334,20 +331,34 @@ function renderChart(type, d, opts, blockId) {
     }
 
     case 'chart-donut': {
-      const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
+      const DONUT_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899']
+      const total = d.reduce((s, item) => s + (item.value || 0), 0)
       return (
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={d} cx="50%" cy="45%"
-              innerRadius={`${Math.max(10, opts.innerRadius)}%`}
-              outerRadius={`${Math.max(opts.innerRadius + 8, opts.outerRadius)}%`}
-              dataKey={yKey} nameKey={xKey} label={opts.pieLabel}
-            >
-              {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
-            </Pie>
-            <Tooltip {...TOOLTIP_PROPS} />{legend}
-          </PieChart>
-        </ResponsiveContainer>
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 8 }}>
+          <div style={{ flex: '0 0 55%', height: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={d} cx="50%" cy="50%"
+                  innerRadius="52%" outerRadius="85%"
+                  dataKey="value" nameKey="label" paddingAngle={2}
+                >
+                  {d.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
+                </Pie>
+                <Tooltip {...TOOLTIP_PROPS} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 8 }}>
+            {d.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: DONUT_COLORS[i % DONUT_COLORS.length], flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 10, color: '#475467' }}>{item.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#1d2939' }}>{item.value.toLocaleString()}</span>
+                <span style={{ fontSize: 9, color: '#98a2b3' }}>({total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )
     }
 
@@ -387,6 +398,23 @@ function renderChart(type, d, opts, blockId) {
       )
     }
 
+    case 'chart-hbar': {
+      const HBAR_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={d} layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 0 }}>
+            {grid}
+            <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
+            <Tooltip {...TOOLTIP_PROPS} />
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
+              {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    }
+
     case 'num':
       return (
         <div className="stat-grid">
@@ -402,25 +430,40 @@ function renderChart(type, d, opts, blockId) {
         </div>
       )
 
-    case 'table':
+    case 'table': {
+      const pageSize = 5
+      const pageData = d.slice(0, pageSize)
+      const totalPages = Math.ceil(d.length / pageSize)
       return (
         <div className="pt-wrap">
           <table className="pt-table" style={{ fontSize: Math.max(9, opts.fontSize - 1) }}>
-            <thead><tr>{['ID', 'Name', 'Age', 'Test', 'Outcome', 'Camp'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+            <thead><tr>{['Drive Name', 'Location', 'Date', 'Patients Screened', 'Positive Cases', 'Referred', 'Actions'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
-              {d.map((p, i) => (
+              {pageData.map((p, i) => (
                 <tr key={p.id || i}>
-                  <td style={{ color: '#475569' }}>{p.id}</td>
-                  <td style={{ color: '#cbd5e1' }}>{p.name}</td>
-                  <td>{p.age}</td><td>{p.test}</td>
-                  <td><span className={`outcome-pill ${p.outcome === 'positive' ? 'pos' : 'norm'}`}>{p.outcome}</span></td>
+                  <td style={{ color: '#1e40af', fontWeight: 500 }}>{p.name}</td>
                   <td>{p.location}</td>
+                  <td>{p.date}</td>
+                  <td>{p.screened?.toLocaleString()}</td>
+                  <td>{p.positive}</td>
+                  <td>{p.referred}</td>
+                  <td><span style={{ cursor: 'pointer', color: '#64748b' }}>👁</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="pt-pagination">
+            <span className="pt-page-info">Showing 1 to {Math.min(pageSize, d.length)} of {d.length} drives</span>
+            <div className="pt-page-btns">
+              {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
+                <button key={i} className={`pt-page-btn${i === 0 ? ' active' : ''}`}>{i + 1}</button>
+              ))}
+              {totalPages > 3 && <span className="pt-page-btn">›</span>}
+            </div>
+          </div>
         </div>
       )
+    }
 
     default:
       return <div style={{ color: '#475569', fontSize: 11, padding: 16 }}>Unknown block type</div>
@@ -483,22 +526,27 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       onClick={onSelect}
     >
       <div className="card-accent" style={{ background: `linear-gradient(90deg,${props.color},${props.color}44)` }} />
-      <div className="card-header">
-        <div>
-          <div className="card-title-row">
-            <div className="card-dot" style={{ background: props.color, boxShadow: `0 0 5px ${props.color}` }} />
-            <span className="card-title" style={{ fontSize: props.fontSize, fontWeight: props.fontWeight }}>{props.title}</span>
+      <div className="card-header" style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 14px 4px 14px', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={props.onDragStart}>
+            <GripVertical size={14} />
           </div>
-          <p className="card-subtitle" style={{ fontSize: Math.max(9, props.fontSize - 1) }}>{props.subtitle}</p>
+          <div>
+            <div className="card-title-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="card-title" style={{ fontSize: props.fontSize, fontWeight: 600, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {props.title}
+              </span>
+            </div>
+            {props.subtitle && <p className="card-subtitle" style={{ fontSize: Math.max(9, props.fontSize - 1), margin: 0, color: '#64748b' }}>{props.subtitle}</p>}
+          </div>
         </div>
-        <div className="card-actions">
-          {!isStatBlock && (
-            <button className="card-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditing(true) }} title="Edit data">
-              <Pencil size={11} />
-            </button>
-          )}
-          <button className="card-action-btn dup"    onClick={(e) => { e.stopPropagation(); onDuplicate() }} title="Duplicate"><Copy size={11} /></button>
-          <button className="card-action-btn remove" onClick={(e) => { e.stopPropagation(); onRemove()    }} title="Remove"   ><X    size={11} /></button>
+        <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button className="card-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditing(true) }} title="Edit data" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
+            <Pencil size={13} />
+          </button>
+          <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); onDuplicate() }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
+            <MoreVertical size={13} />
+          </button>
         </div>
       </div>
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>
