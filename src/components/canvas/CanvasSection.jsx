@@ -14,6 +14,10 @@ function defaultSize(type) {
   return { w: 360, h: 380 }
 }
 
+function minWidthForType(type) {
+  return type?.startsWith('stat-') ? 120 : 180
+}
+
 function rectOverlaps(a, b) {
   return !(
     a.x + a.w <= b.x ||
@@ -45,7 +49,7 @@ function packWithoutOverlap(items, canvasWidth) {
   const sorted = [...items].sort((a, b) => (a.y - b.y) || (a.x - b.x))
 
   for (const item of sorted) {
-    const w = Math.max(180, Math.min(item.w, maxW))
+    const w = Math.max(minWidthForType(item.type), Math.min(item.w, maxW))
     const h = Math.max(120, item.h)
     const maxX = Math.max(padding, canvasWidth - w - padding)
 
@@ -54,7 +58,7 @@ function packWithoutOverlap(items, canvasWidth) {
     const endY = startY + 2600
     for (let y = startY; y <= endY && !found; y += step) {
       for (let x = padding; x <= maxX; x += step) {
-        const cand = { id: item.id, x, y, w, h }
+        const cand = { id: item.id, type: item.type, x, y, w, h }
         if (!placed.some((p) => rectOverlaps(cand, p))) {
           found = cand
           break
@@ -64,7 +68,7 @@ function packWithoutOverlap(items, canvasWidth) {
 
     if (!found) {
       const bottom = placed.reduce((m, p) => Math.max(m, p.y + p.h), padding)
-      found = { id: item.id, x: padding, y: bottom + gap, w, h }
+      found = { id: item.id, type: item.type, x: padding, y: bottom + gap, w, h }
     }
 
     placed.push(found)
@@ -108,8 +112,9 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
 
   useEffect(() => {
     if (!canvasWidth || canvasWidth <= 0) return
-    const maxW = Math.max(180, canvasWidth - 16)
-    const nextW = clamp(liveRectRef.current.w, 180, maxW)
+    const minW = minWidthForType(block.type)
+    const maxW = Math.max(minW, canvasWidth - 16)
+    const nextW = clamp(liveRectRef.current.w, minW, maxW)
     const nextX = clamp(liveRectRef.current.x, 0, Math.max(0, canvasWidth - nextW))
     if (nextW !== liveRectRef.current.w || nextX !== liveRectRef.current.x) {
       const next = { ...liveRectRef.current, w: nextW, x: nextX }
@@ -168,7 +173,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
     setIsResizing(true)
 
     function move(ev) {
-      const nextW = clamp(startW + (ev.clientX - startX), 180, 1200)
+      const nextW = clamp(startW + (ev.clientX - startX), minWidthForType(block.type), 1200)
       const nextH = clamp(startH + (ev.clientY - startY), block.type?.startsWith('stat-') ? 120 : 180, 1000)
       const placed = resolveNoOverlap({ x, y, w: Math.round(nextW), h: Math.round(nextH) }, otherRects)
       setLiveRect((prev) => ({
@@ -196,6 +201,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
       style={{ left: x, top: y, width: w, height: h }}
       onMouseDown={() => onSelect(block.id)}
+      onClick={(e) => { e.stopPropagation(); onSelect(block.id) }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -273,6 +279,7 @@ export default function CanvasSection({
         y: Number(b.props?.y ?? 16),
         w: Number(b.props?.width ?? d.w),
         h: Number(b.props?.height ?? d.h),
+        type: b.type,
       }
     })
 

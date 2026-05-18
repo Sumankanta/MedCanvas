@@ -8,7 +8,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Table2, Plus, LayoutTemplate } from 'lucide-react'
+import { Calendar, Grid2X2, Plus, SlidersHorizontal, Table2 } from 'lucide-react'
 import CanvasSection from './CanvasSection'
 
 // ── Sortable wrapper for a section ─────────────────────────────────────────
@@ -121,32 +121,19 @@ export default function CanvasArea({
     if (type) onAddSection(type)   // creates a section + puts the block inside
   }
 
-  const totalWidgets  = sections.reduce((acc, s) => acc + (s.blocks?.length || 0), 0)
-
   return (
     <main className="canvas-area">
-      {/* ── Toolbar ── */}
       <div className="canvas-toolbar">
         <div className="canvas-toolbar-left">
-          <span className="canvas-info">
-            <span>{totalWidgets}</span> widget{totalWidgets !== 1 ? 's' : ''} in{' '}
-            <span>{sections.length}</span> section{sections.length !== 1 ? 's' : ''}
-          </span>
-          {sections.length > 0 && (
-            <span className="canvas-info" style={{ color: '#334155' }}>
-              Drag section handles to reorder · drag widgets inside sections
-            </span>
-          )}
+          <button className="tb-btn" title="Grid"><Grid2X2 size={14} /></button>
+          <span className="canvas-info">Grid</span>
+          <button className="switch is-on" title="Toggle grid" />
+          <span className="canvas-info">Snap to grid</span>
+          <button className="switch is-on" title="Snap to grid" />
         </div>
         <div className="canvas-toolbar-right">
-          <button
-            className="canvas-add-section-btn"
-            onClick={() => onAddSection(null)}
-            title="Add empty section"
-          >
-            <Plus size={13} /> Add Section
-          </button>
-          <span className="canvas-info">Del · remove selected · Ctrl+Z · undo</span>
+          <button className="date-filter"><Calendar size={14} /> This Month (May 1 - May 31, 2025)</button>
+          <button className="date-filter"><SlidersHorizontal size={14} /> Filters</button>
         </div>
       </div>
 
@@ -164,12 +151,12 @@ export default function CanvasArea({
             {/* ── Empty State ── */}
             {sections.length === 0 && (
               <div className="canvas-empty">
-                <div className="canvas-empty-ring"><LayoutTemplate size={28} /></div>
+                <div className="canvas-empty-ring"><Grid2X2 size={28} /></div>
                 <p className="canvas-empty-title">
                   {isDragOver ? 'Drop to create a section' : 'Canvas is empty'}
                 </p>
                 <p className="canvas-empty-sub">
-                  Drag charts/stats from the right panel · or click a card to add
+                  Drag widgets from the left panel or click a card to add
                 </p>
                 <button
                   className="canvas-empty-cta"
@@ -185,7 +172,7 @@ export default function CanvasArea({
               <>
                 {isDragOver && (
                   <div className="drop-hint-banner">
-                    <Plus size={13} /> Drop to create a new section
+                    <Plus size={13} /> Drop widget here or click to add
                   </div>
                 )}
 
@@ -265,7 +252,7 @@ export default function CanvasArea({
                   className="canvas-add-section-footer"
                   onClick={() => onAddSection(null)}
                 >
-                  <Plus size={13} /> Add Section
+                  <Plus size={13} /> Drop widget here or click to add
                 </button>
               </>
             )}

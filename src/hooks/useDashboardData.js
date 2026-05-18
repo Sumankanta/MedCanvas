@@ -23,9 +23,9 @@ function simulateFetch() {
 }
 
 export function useDashboardData() {
-  const [data,         setData]         = useState(null)
-  const [loading,      setLoading]      = useState(true)
-  const [lastUpdated,  setLastUpdated]  = useState(null)
+  const [data,         setData]         = useState(FIXED_DATA)
+  const [loading,      setLoading]      = useState(false)
+  const [lastUpdated,  setLastUpdated]  = useState(() => new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const fetchData = useCallback(async (showRefreshing = false) => {

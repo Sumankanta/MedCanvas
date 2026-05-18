@@ -6,35 +6,41 @@ export const campInfo = {
 }
 
 export const statVariables = [
-  { key: 'totalScreened', label: 'Patients Screened', value: 1000 },
-  { key: 'oralCancer', label: 'Oral Cancer +ve', value: 138 },
-  { key: 'anemia', label: 'Anemia +ve', value: 214 },
-  { key: 'normal', label: 'Normal / Clear', value: 648 },
-  { key: 'locations', label: 'Camp Locations', value: 10 },
-  { key: 'testsTotal', label: 'Tests Conducted', value: 1875 },
+  { key: 'totalScreened', label: 'Patients Screened', value: 2568 },
+  { key: 'oralCancer', label: 'Positive Cases', value: 312 },
+  { key: 'anemia', label: 'Suspected', value: 254 },
+  { key: 'normal', label: 'Normal', value: 1856 },
+  { key: 'locations', label: 'Referred', value: 186 },
+  { key: 'testsTotal', label: 'Tests Conducted', value: 4231 },
 ]
 
 export const outcomeChartData = [
-  { label: 'Oral Cancer +ve', value: 138 },
-  { label: 'Anemia +ve', value: 214 },
-  { label: 'Normal', value: 648 },
+  { label: 'Normal', value: 1856 },
+  { label: 'Positive', value: 312 },
+  { label: 'Suspected', value: 254 },
+  { label: 'Referred', value: 146 },
 ]
 
 export const screeningByDayData = [
-  { day: 'Mon', screened: 180, positive: 24, normal: 156 },
-  { day: 'Tue', screened: 170, positive: 21, normal: 149 },
-  { day: 'Wed', screened: 160, positive: 18, normal: 142 },
-  { day: 'Thu', screened: 155, positive: 20, normal: 135 },
-  { day: 'Fri', screened: 145, positive: 19, normal: 126 },
-  { day: 'Sat', screened: 190, positive: 36, normal: 154 },
+  { day: 'May 1', screened: 150, positive: 18, normal: 132 },
+  { day: 'May 4', screened: 220, positive: 24, normal: 196 },
+  { day: 'May 7', screened: 310, positive: 38, normal: 272 },
+  { day: 'May 10', screened: 250, positive: 31, normal: 219 },
+  { day: 'May 13', screened: 410, positive: 48, normal: 362 },
+  { day: 'May 16', screened: 330, positive: 36, normal: 294 },
+  { day: 'May 19', screened: 455, positive: 56, normal: 399 },
+  { day: 'May 22', screened: 390, positive: 44, normal: 346 },
+  { day: 'May 25', screened: 520, positive: 62, normal: 458 },
+  { day: 'May 28', screened: 650, positive: 72, normal: 578 },
+  { day: 'May 31', screened: 710, positive: 81, normal: 629 },
 ]
 
 export const testTypeData = [
-  { name: 'Oral Exam', value: 1000 },
-  { name: 'Hemoglobin', value: 640 },
-  { name: 'Blood Pressure', value: 580 },
-  { name: 'BMI Check', value: 420 },
-  { name: 'VIA Test', value: 235 },
+  { name: 'Visual Examination', value: 2145 },
+  { name: 'Oral Inspection', value: 1245 },
+  { name: 'Biopsy', value: 412 },
+  { name: 'Pap Smear', value: 213 },
+  { name: 'Other Tests', value: 216 },
 ]
 
 export const ageGroupData = [
@@ -79,7 +85,6 @@ const tests = [
   'BP Check',
 ]
 
-const outcomes = ['normal', 'positive']
 const locations = [
   'Camp A','Camp B','Camp C','Camp D','Camp E',
   'Camp F','Camp G','Camp H','Camp I','Camp J'

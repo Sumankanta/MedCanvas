@@ -10,7 +10,7 @@ import { useDashboardData } from './hooks/useDashboardData'
 // ── Counters ────────────────────────────────────────────────────────────────
 let blockCounter   = 0
 let sectionCounter = 0
-const STORAGE_KEY = 'medical_dashboard_layout_v1'
+const STORAGE_KEY = 'medical_dashboard_layout_v8'
 
 function nextBlockId()   { blockCounter   += 1; return `block-${blockCounter}`   }
 function nextSectionId() { sectionCounter += 1; return `section-${sectionCounter}` }
@@ -189,13 +189,16 @@ function createTemplateSections(templateId) {
     return [s1]
   }
 
-  const s1 = { id: nextSectionId(), title: 'Starter Dashboard', cols: 12, blocks: [], colSpanMap: {} }
+  const s1 = { id: nextSectionId(), title: 'Medical Drive Monitoring Dashboard', cols: 12, blocks: [], colSpanMap: {} }
   s1.blocks = [
-    chart('chart-bar', 16, 16, 360, 340, 'Screenings by Day'),
-    chart('chart-line', 392, 16, 360, 340, 'Trend'),
-    chart('chart-donut', 768, 16, 390, 340, 'Test Type Split'),
-    chart('stat-total', 16, 372, 360, 180, 'Total Patients'),
-    chart('chart-area', 392, 372, 766, 340, 'Screening Outcomes'),
+    chart('stat-total', 12, 12, 124, 96, 'Total Patients Screened'),
+    chart('stat-tests', 144, 12, 124, 96, 'Tests Conducted'),
+    chart('stat-positive', 276, 12, 124, 96, 'Positive Cases'),
+    chart('stat-locations', 408, 12, 124, 96, 'Referred'),
+    chart('chart-line', 12, 120, 256, 220, 'Patients Screened Over Time'),
+    chart('chart-donut', 276, 120, 256, 220, 'Screening Outcome Distribution'),
+    chart('table', 12, 352, 256, 230, 'Recent Screening Drives'),
+    chart('chart-bar', 276, 352, 256, 230, 'Tests Conducted by Type'),
   ]
   return [s1]
 }
@@ -358,6 +361,7 @@ export default function App() {
 
   // ── Block operations ───────────────────────────────────────────────────────
   const addBlockToSection = useCallback((sectionId, type, _colIndex = 0, initialPos = null) => {
+    void _colIndex
     setDashboardState((prev) => {
       const newBlock = makeBlock(type)
       const nextSections = prev.sections.map((s) => {
@@ -746,14 +750,18 @@ export default function App() {
         isExporting={isExporting}
       />
 
-      <div className="workspace">
-        <LeftPanel
+      <div className={`workspace${leftOpen ? '' : ' left-hidden'}${rightOpen ? '' : ' right-hidden'}`}>
+        <RightPanel
+          side="left"
           open={leftOpen}
-          selectedBlock={selectedBlock}
-          cols={selectedSectionCols}
-          onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}
-          onUpdateSection={(patch) => selectedSection && updateSection(selectedSection.id, patch)}
-          selectedSection={selectedSection}
+          variables={data.statVariables}
+          onAddBlock={(type) => {
+            if (sections.length === 0) {
+              addSection(type)
+            } else {
+              addBlockToSection(sections[sections.length - 1].id, type)
+            }
+          }}
           onClose={() => setLeftOpen(false)}
         />
 
@@ -777,16 +785,15 @@ export default function App() {
           zoom={zoom}
         />
 
-        <RightPanel
+        <LeftPanel
+          side="right"
           open={rightOpen}
-          variables={data.statVariables}
-          onAddBlock={(type) => {
-            if (sections.length === 0) {
-              addSection(type)
-            } else {
-              addBlockToSection(sections[sections.length - 1].id, type)
-            }
-          }}
+          selectedBlock={selectedBlock}
+          cols={selectedSectionCols}
+          onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}
+          onUpdateSection={(patch) => selectedSection && updateSection(selectedSection.id, patch)}
+          selectedSection={selectedSection}
+          onClose={() => setRightOpen(false)}
         />
       </div>
     </div>

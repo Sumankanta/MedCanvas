@@ -208,6 +208,7 @@ function SeriesRow({ label, fieldValue, fieldOptions, colorValue, labelValue, on
 
 // ── LeftPanel ─────────────────────────────────────────────────
 export default function LeftPanel({
+  side = 'left',
   open, selectedBlock, selectedSection,
   cols,           // = section's cols (for column picker range)
   onUpdateBlock,
@@ -351,9 +352,9 @@ export default function LeftPanel({
   // ── No selection ──────────────────────────────────────────
   if (!selectedBlock) {
     return (
-      <aside className={`left-panel${open ? '' : ' collapsed'}`}>
+      <aside className={`${side}-panel properties-panel${open ? '' : ' collapsed'}`}>
         <div className="panel-header">
-          <span className="panel-title">Properties</span>
+          <span className="panel-title">Widget Properties</span>
           <button className="panel-close" onClick={onClose}><X size={12} /></button>
         </div>
         <div className="no-selection">
@@ -365,18 +366,23 @@ export default function LeftPanel({
   }
 
   return (
-    <aside className={`left-panel${open ? '' : ' collapsed'}`}>
+    <aside className={`${side}-panel properties-panel${open ? '' : ' collapsed'}`}>
       <div className="panel-header">
-        <span className="panel-title">{BLOCK_NAMES[selectedBlock.type] || 'Widget'}</span>
+        <span className="panel-title">Widget Properties</span>
         <button className="panel-close" onClick={onClose}><X size={12} /></button>
       </div>
 
-      <div className="panel-tabs">
-        {['style', 'data'].map((t) => (
-          <button key={t} className={`panel-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      <div className="panel-mode-select-wrap">
+        <label className="panel-mode-label" htmlFor="widget-property-mode">Edit</label>
+        <select
+          id="widget-property-mode"
+          className="panel-mode-select"
+          value={tab}
+          onChange={(e) => setTab(e.target.value)}
+        >
+          <option value="style">Style</option>
+          <option value="data">Data</option>
+        </select>
       </div>
 
       <div className="panel-body">
@@ -408,39 +414,66 @@ export default function LeftPanel({
 
               <div className="prop-row">
                 <span className="prop-label">Width</span>
-                <input
-                  type="range"
-                  className="prop-slider"
-                  min={180}
-                  max={1200}
-                  step={10}
-                  value={width}
-                  onChange={(e) => {
-                    const v = Number(e.target.value)
-                    setWidth(v)
-                    onUpdateBlock({ width: v })
-                  }}
-                />
-                <span className="prop-val">{width}px</span>
+                <div className="prop-control-stack">
+                  <input
+                    type="range"
+                    className="prop-slider"
+                    min={selectedBlock.type?.startsWith('stat-') ? 120 : 180}
+                    max={1200}
+                    step={10}
+                    value={width}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      setWidth(v)
+                      onUpdateBlock({ width: v })
+                    }}
+                  />
+                  <input
+                    type="number"
+                    className="prop-input prop-number"
+                    min={selectedBlock.type?.startsWith('stat-') ? 120 : 180}
+                    max={1200}
+                    value={width}
+                    onChange={(e) => {
+                      const min = selectedBlock.type?.startsWith('stat-') ? 120 : 180
+                      const v = Math.max(min, Math.min(1200, Number(e.target.value) || min))
+                      setWidth(v)
+                      onUpdateBlock({ width: v })
+                    }}
+                  />
+                </div>
               </div>
 
               {/* ── Height slider ── */}
               <div className="prop-row">
                 <span className="prop-label">Height</span>
-                <input
-                  type="range"
-                  className="prop-slider"
-                  min={hLimits.min}
-                  max={hLimits.max}
-                  step={10}
-                  value={height}
-                  onChange={(e) => {
-                    const v = Number(e.target.value)
-                    setHeight(v)
-                    onUpdateBlock({ height: v })
-                  }}
-                />
-                <span className="prop-val">{height}px</span>
+                <div className="prop-control-stack">
+                  <input
+                    type="range"
+                    className="prop-slider"
+                    min={hLimits.min}
+                    max={hLimits.max}
+                    step={10}
+                    value={height}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      setHeight(v)
+                      onUpdateBlock({ height: v })
+                    }}
+                  />
+                  <input
+                    type="number"
+                    className="prop-input prop-number"
+                    min={hLimits.min}
+                    max={hLimits.max}
+                    value={height}
+                    onChange={(e) => {
+                      const v = Math.max(hLimits.min, Math.min(hLimits.max, Number(e.target.value) || hLimits.min))
+                      setHeight(v)
+                      onUpdateBlock({ height: v })
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="prop-row">
