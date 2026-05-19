@@ -1,63 +1,61 @@
+import { useState } from 'react'
 import {
   BarChart3,
-  CalendarRange,
   Columns3,
-  Donut,
-  Gauge,
   GripVertical,
-  Image,
   LineChart,
-  MapPin,
-  Minus,
   PieChart,
   Search,
   Table2,
-  Text,
   X,
+  TrendingUp,
+  Target,
+  Hash,
+  Minus,
 } from 'lucide-react'
 
 const GROUPS = [
   {
     title: 'Summary',
     items: [
-      { type: 'stat-total', name: 'Number Callout', Icon: BarChart3 },
-      { type: 'num', name: 'Stat Card', Icon: Table2 },
-      { type: 'chart-radialbar', name: 'Progress Indicator', Icon: Gauge },
-      { type: 'chart-line', name: 'Trend Indicator', Icon: LineChart },
+      { type: 'stat-total',     name: 'Number Callout',      Icon: Hash },
+      { type: 'num',            name: 'Stat Card',           Icon: BarChart3 },
+      { type: 'stat-positive',  name: 'Progress Indicator',  Icon: Target },
+      { type: 'stat-normal',    name: 'Trend Indicator',     Icon: TrendingUp },
     ],
   },
   {
     title: 'Charts',
     items: [
-      { type: 'chart-bar', name: 'Bar Chart', Icon: BarChart3 },
-      { type: 'chart-line', name: 'Line Chart', Icon: LineChart },
-      { type: 'chart-area', name: 'Area Chart', Icon: LineChart },
-      { type: 'chart-pie', name: 'Pie/Donut Chart', Icon: Donut },
-      { type: 'chart-stacked', name: 'Column Chart', Icon: Columns3 },
-      { type: 'chart-radialbar', name: 'Gauge Chart', Icon: Gauge },
-      { type: 'chart-bar', name: 'Funnel Chart', Icon: PieChart },
-      { type: 'chart-scatter', name: 'Radar Chart', Icon: MapPin },
-      { type: 'chart-donut', name: 'Heatmap', Icon: Donut },
-      { type: 'chart-radialbar', name: 'Map Chart', Icon: MapPin },
+      { type: 'chart-bar',       name: 'Bar Chart',         Icon: BarChart3 },
+      { type: 'chart-line',      name: 'Line Chart',        Icon: LineChart },
+      { type: 'chart-area',      name: 'Area Chart',        Icon: LineChart },
+      { type: 'chart-pie',       name: 'Pie/Donut Chart',   Icon: PieChart },
+      { type: 'chart-stacked',   name: 'Column Chart',      Icon: Columns3 },
+      { type: 'chart-radialbar', name: 'Gauge Chart',       Icon: Target },
+      { type: 'chart-donut',     name: 'Funnel Chart',      Icon: PieChart },
+      { type: 'chart-scatter',   name: 'Radar Chart',       Icon: Target },
+      { type: 'chart-hbar',      name: 'Heatmap',           Icon: BarChart3 },
+      { type: 'chart-radialbar', name: 'Map Chart',         Icon: Target },
     ],
   },
   {
     title: 'Data',
     items: [
-      { type: 'table', name: 'Table', Icon: Table2 },
-      { type: 'table', name: 'Advanced Table', Icon: Table2 },
-      { type: 'table', name: 'Pivot Table', Icon: Table2 },
+      { type: 'table', name: 'Table',          Icon: Table2 },
+      { type: 'table', name: 'Advanced Table',  Icon: Table2 },
+      { type: 'table', name: 'Pivot Table',     Icon: Table2 },
     ],
   },
   {
     title: 'Layout',
     items: [
-      { type: 'chart-bar', name: 'Row', Icon: Minus },
-      { type: 'chart-line', name: 'Column', Icon: Columns3 },
-      { type: 'num', name: 'Text / Title', Icon: Text },
-      { type: 'chart-donut', name: 'Image', Icon: Image },
-      { type: 'chart-area', name: 'Divider', Icon: Minus },
-      { type: 'chart-scatter', name: 'Spacer', Icon: CalendarRange },
+      { type: 'num',          name: 'Row',        Icon: Minus },
+      { type: 'num',          name: 'Column',     Icon: Columns3 },
+      { type: 'num',          name: 'Text / Title', Icon: Hash },
+      { type: 'chart-pie',    name: 'Image',      Icon: PieChart },
+      { type: 'num',          name: 'Divider',    Icon: Minus },
+      { type: 'num',          name: 'Spacer',     Icon: Columns3 },
     ],
   },
 ]
@@ -84,6 +82,19 @@ function WidgetButton({ item, onAddBlock }) {
 }
 
 export default function RightPanel({ side = 'right', open = true, onAddBlock, onClose }) {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredGroups = GROUPS.map((group) => {
+    if (!searchQuery.trim()) return group
+    const q = searchQuery.toLowerCase()
+    const filtered = group.items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.type.toLowerCase().includes(q)
+    )
+    return { ...group, items: filtered }
+  }).filter((group) => group.items.length > 0)
+
   return (
     <aside className={`${side}-panel widget-library${open ? '' : ' collapsed'}`}>
       <div className="panel-header">
@@ -93,16 +104,25 @@ export default function RightPanel({ side = 'right', open = true, onAddBlock, on
 
       <div className="widget-search">
         <Search size={14} />
-        <input placeholder="Search widgets..." />
+        <input
+          placeholder="Search widgets..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       <div className="panel-body widgets-body">
-        {GROUPS.map((group) => (
+        {filteredGroups.length === 0 && (
+          <div style={{ textAlign: 'center', color: '#98a2b3', fontSize: 12, padding: '20px 0' }}>
+            No widgets match "{searchQuery}"
+          </div>
+        )}
+        {filteredGroups.map((group) => (
           <div className="widget-group" key={group.title}>
             <div className="widget-group-title">{group.title}</div>
             <div className="widget-list">
               {group.items.map((item, index) => (
-                <WidgetButton key={`${group.title}-${item.name}-${index}`} item={item} onAddBlock={onAddBlock} />
+                <WidgetButton key={`${group.title}-${item.type}-${index}`} item={item} onAddBlock={onAddBlock} />
               ))}
             </div>
           </div>

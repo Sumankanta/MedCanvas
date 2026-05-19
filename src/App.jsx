@@ -127,9 +127,15 @@ function makeSection(title = '', blockType = null) {
 }
 
 function getDefaultDashboardState() {
-  const defaultSections = createTemplateSections('starter')
+  const defaultSections = []
   syncCountersFromSections(defaultSections)
-  return { sections: defaultSections, history: [JSON.parse(JSON.stringify(defaultSections))], index: 0 }
+  return { 
+    sections: defaultSections, 
+    history: [JSON.parse(JSON.stringify(defaultSections))], 
+    index: 0,
+    title: 'Medical Drive Monitoring Dashboard',
+    subtitle: 'Real-time overview of screening drives and outcomes'
+  }
 }
 
 function loadDashboardState() {
@@ -143,6 +149,8 @@ function loadDashboardState() {
       sections,
       history: [JSON.parse(JSON.stringify(sections))],
       index: 0,
+      title: parsed.title || 'Medical Drive Monitoring Dashboard',
+      subtitle: parsed.subtitle || 'Real-time overview of screening drives and outcomes'
     }
   } catch {
     return getDefaultDashboardState()
@@ -233,17 +241,26 @@ export default function App() {
   const [rightOpen,  setRightOpen]  = useState(true)
   const [zoom,       setZoom]       = useState(100)
   const [isExporting, setIsExporting] = useState(false)
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
   const rootRef = useRef(null)
 
-  const { sections, history, index } = dashboardState
+  const { sections, history, index, title, subtitle } = dashboardState
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sections }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sections, title, subtitle }))
     } catch {
       // ignore storage failures
     }
-  }, [sections])
+  }, [sections, title, subtitle])
+
+  const setDashboardTitle = useCallback((newTitle) => {
+    setDashboardState(prev => ({ ...prev, title: newTitle }))
+  }, [])
+
+  const setDashboardSubtitle = useCallback((newSubtitle) => {
+    setDashboardState(prev => ({ ...prev, subtitle: newSubtitle }))
+  }, [])
 
   // ── History Helpers ────────────────────────────────────────────────────────
   const pushState = useCallback((newSections) => {
@@ -723,12 +740,16 @@ export default function App() {
   return (
     <div
       ref={rootRef}
-      className="builder-root"
+      className={`builder-root ${isPreviewMode ? 'is-preview' : ''}`}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       style={{ outline: 'none' }}
     >
       <TopBar
+        dashboardTitle={title}
+        onUpdateDashboardTitle={setDashboardTitle}
+        isPreviewMode={isPreviewMode}
+        onSetPreviewMode={setIsPreviewMode}
         campInfo={data.campInfo}
         blockCount={totalBlocks}
         lastUpdated={lastUpdated}
@@ -772,6 +793,11 @@ export default function App() {
           setSections={(s) => pushState(s)}
           data={data}
           selectedId={selectedId}
+          dashboardTitle={title}
+          dashboardSubtitle={subtitle}
+          onUpdateDashboardTitle={setDashboardTitle}
+          onUpdateDashboardSubtitle={setDashboardSubtitle}
+          isPreviewMode={isPreviewMode}
           onUpdateBlock={updateBlockProps}
           onSelect={setSelectedId}
           onRemoveBlock={removeBlock}
@@ -798,6 +824,7 @@ export default function App() {
           selectedBlock={selectedBlock}
           cols={selectedSectionCols}
           onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}
+          onRemoveBlock={() => selectedId && removeBlock(selectedId)}
           onUpdateSection={(patch) => selectedSection && updateSection(selectedSection.id, patch)}
           selectedSection={selectedSection}
           onClose={() => setRightOpen(false)}

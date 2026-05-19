@@ -38,6 +38,8 @@ function SortableSection({ section, children }) {
 export default function CanvasArea({
   sections,
   data,
+  dashboardTitle, dashboardSubtitle,
+  onUpdateDashboardTitle, onUpdateDashboardSubtitle,
   selectedId, onUpdateBlock, onSelect, onRemoveBlock, onDuplicateBlock,
   onAddSection, onRemoveSection, onUpdateSection, onReorderSections,
   onAddBlockToSection, onReorderBlocksInSection,
@@ -47,6 +49,8 @@ export default function CanvasArea({
   const [isDragOver,      setIsDragOver]      = useState(false)
   const [activeId,        setActiveId]        = useState(null) // Can be sectionId or blockId
   const [activeType,      setActiveType]      = useState(null) // 'section' or 'block'
+  const [editingTitle,    setEditingTitle]    = useState(false)
+  const [editingSubtitle, setEditingSubtitle] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -179,12 +183,35 @@ export default function CanvasArea({
         <div className="canvas-surface" style={{ transform: `scale(${zoom / 100})` }}>
           <div className="dashboard-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '0 8px' }}>
             <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Medical Drive Monitoring Dashboard <PenLine size={14} style={{ color: '#98a2b3', cursor: 'pointer' }} />
-              </h1>
-              <p style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0' }}>
-                Real-time overview of screening drives and outcomes
-              </p>
+              {editingTitle ? (
+                <input
+                  autoFocus
+                  style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, border: '1px solid #d0d5dd', padding: '2px 6px', borderRadius: '4px', width: '350px' }}
+                  value={dashboardTitle}
+                  onChange={(e) => onUpdateDashboardTitle(e.target.value)}
+                  onBlur={() => setEditingTitle(false)}
+                  onKeyDown={(e) => e.key === 'Enter' && setEditingTitle(false)}
+                />
+              ) : (
+                <h1 onClick={() => setEditingTitle(true)} style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  {dashboardTitle || 'Untitled Dashboard'} <PenLine size={14} style={{ color: '#98a2b3' }} />
+                </h1>
+              )}
+
+              {editingSubtitle ? (
+                <input
+                  autoFocus
+                  style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0', border: '1px solid #d0d5dd', padding: '2px 6px', borderRadius: '4px', width: '350px' }}
+                  value={dashboardSubtitle}
+                  onChange={(e) => onUpdateDashboardSubtitle(e.target.value)}
+                  onBlur={() => setEditingSubtitle(false)}
+                  onKeyDown={(e) => e.key === 'Enter' && setEditingSubtitle(false)}
+                />
+              ) : (
+                <p onClick={() => setEditingSubtitle(true)} style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {dashboardSubtitle || 'Add a subtitle'} <PenLine size={12} style={{ color: '#98a2b3' }} />
+                </p>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="date-filter" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', border: '1px solid #d0d5dd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', color: '#344054', fontWeight: 500, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', cursor: 'pointer' }}><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>

@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
 } from 'recharts'
-import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical } from 'lucide-react'
+import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical, Trash } from 'lucide-react'
 
 const BASE_COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#f97316', '#a78bfa']
 const TOOLTIP_PROPS = {
@@ -470,9 +470,10 @@ function renderChart(type, d, opts, blockId) {
   }
 }
 
-export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock }) {
+export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart }) {
   const [hovered,   setHovered]   = useState(false)
   const [editing,   setEditing]   = useState(false)
+  const [menuOpen,  setMenuOpen]  = useState(false)
   const [localData, setLocalData] = useState(() => block.props?.data || initData(block.type, data))
 
   const isStatBlock = block.type.startsWith('stat-')
@@ -514,6 +515,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
         opacity:      props.opacity / 100,
         borderRadius: props.radius,
         fontFamily:   props.fontFamily,
+        overflow:     menuOpen ? 'visible' : 'hidden',
         boxShadow:    selected
           ? `0 0 0 2px ${props.color}, var(--shadow-lg)`
           : hovered ? 'var(--shadow-lg)' : 'var(--shadow-md)',
@@ -528,7 +530,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       <div className="card-accent" style={{ background: `linear-gradient(90deg,${props.color},${props.color}44)` }} />
       <div className="card-header" style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 14px 4px 14px', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={props.onDragStart}>
+          <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={onDragStart}>
             <GripVertical size={14} />
           </div>
           <div>
@@ -540,13 +542,45 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
             {props.subtitle && <p className="card-subtitle" style={{ fontSize: Math.max(9, props.fontSize - 1), margin: 0, color: '#64748b' }}>{props.subtitle}</p>}
           </div>
         </div>
-        <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <button className="card-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditing(true) }} title="Edit data" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
-            <Pencil size={13} />
-          </button>
-          <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); onDuplicate() }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
+        <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+          <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
             <MoreVertical size={13} />
           </button>
+          
+          {menuOpen && (
+            <>
+              <div 
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }} 
+              />
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: '#fff', border: '1px solid #d0d5dd', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', zIndex: 500, minWidth: '140px', display: 'flex', flexDirection: 'column' }}>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#344054', borderBottom: '1px solid #f2f4f7', boxSizing: 'border-box' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onClick={(e) => { e.stopPropagation(); setEditing(true); setMenuOpen(false); }}
+                >
+                  <Pencil size={15} style={{ color: '#667085' }} /> Edit Data
+                </div>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#344054', borderBottom: '1px solid #f2f4f7', boxSizing: 'border-box' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onClick={(e) => { e.stopPropagation(); onDuplicate(); setMenuOpen(false); }}
+                >
+                  <Copy size={15} style={{ color: '#667085' }} /> Duplicate
+                </div>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#d92d20', boxSizing: 'border-box' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#fef3f2'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onClick={(e) => { e.stopPropagation(); onRemove(); setMenuOpen(false); }}
+                >
+                  <Trash size={15} style={{ color: '#d92d20' }} /> Delete
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>

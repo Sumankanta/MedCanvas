@@ -77,25 +77,12 @@ export default function LeftPanel({
   onUpdateBlock,
   onUpdateSection,
   onClose,
+  onRemoveBlock,
 }) {
-  const [title, setTitle] = useState('')
-  const [color, setColor] = useState(DEFAULT_PROPS.color)
-  const [showComparison, setShowComparison] = useState(true)
-  const [comparisonFormat, setComparisonFormat] = useState('Percentage')
-  const [comparisonPeriod, setComparisonPeriod] = useState('Previous Period')
-  const [iconColor, setIconColor] = useState('#1e40af')
-  const [numberFormat, setNumberFormat] = useState('1,234')
-
   const selectedId = selectedBlock?.id
+  const props = selectedBlock ? { ...DEFAULT_PROPS, ...selectedBlock.props } : null
 
-  useEffect(() => {
-    if (!selectedBlock) return
-    const props = { ...DEFAULT_PROPS, ...selectedBlock.props }
-    setTitle(props.title || '')
-    setColor(props.color || DEFAULT_PROPS.color)
-  }, [selectedId])
-
-  if (!selectedBlock) {
+  if (!selectedBlock || !props) {
     return (
       <aside className={`${side}-panel properties-panel${open ? '' : ' collapsed'}`}>
         <div className="panel-header">
@@ -113,6 +100,10 @@ export default function LeftPanel({
   const widgetType = BLOCK_NAMES[selectedBlock.type] || 'Widget'
   const widgetDesc = WIDGET_DESCRIPTIONS[selectedBlock.type] || ''
   const isStat = isStatType(selectedBlock.type)
+
+  const handleUpdate = (patch) => {
+    onUpdateBlock(patch)
+  }
 
   return (
     <aside className={`${side}-panel properties-panel${open ? '' : ' collapsed'}`}>
@@ -141,104 +132,89 @@ export default function LeftPanel({
           <div className="wp-label">Title</div>
           <input
             className="wp-input"
-            value={title}
-            onChange={(e) => { setTitle(e.target.value); onUpdateBlock({ title: e.target.value }) }}
+            value={props.title || ''}
+            onChange={(e) => handleUpdate({ title: e.target.value })}
             placeholder="Widget title"
           />
         </div>
 
-        {/* Data Source */}
+        {/* Subtitle */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
-          <div className="wp-label">Data Source</div>
-          <select className="wp-select">
-            <option>Patient Screening Summary</option>
-          </select>
+          <div className="wp-label">Subtitle</div>
+          <input
+            className="wp-input"
+            value={props.subtitle || ''}
+            onChange={(e) => handleUpdate({ subtitle: e.target.value })}
+            placeholder="Widget subtitle"
+          />
         </div>
 
-        {/* Metric / Value */}
-        <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
-          <div className="wp-label">Metric / Value</div>
-          <select className="wp-select">
-            <option>Total Patients Screened</option>
-            <option>Tests Conducted</option>
-            <option>Positive Cases</option>
-            <option>Referred</option>
-          </select>
-        </div>
-
-        {/* Comparison */}
-        <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
-          <div className="wp-label">Comparison</div>
-          <select className="wp-select" value={comparisonPeriod} onChange={(e) => setComparisonPeriod(e.target.value)}>
-            <option>Previous Period</option>
-            <option>Previous Month</option>
-            <option>Previous Year</option>
-          </select>
-
-          <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
-            <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show comparison</span>
-            <div className={`prop-toggle${showComparison ? ' on' : ''}`} onClick={() => setShowComparison(!showComparison)} />
-          </div>
-
-          <div>
-            <div className="wp-label">Comparison format</div>
-            <select className="wp-select" value={comparisonFormat} onChange={(e) => setComparisonFormat(e.target.value)}>
-              <option>Percentage</option>
-              <option>Absolute</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Icon & Icon Color */}
+        {/* Primary Color */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
           <div className="wp-grid-2">
             <div>
-              <div className="wp-label">Icon</div>
-              <div className="wp-row">
-                <div className="wp-icon-preview-blue">
-                  <Hash size={14} color="#fff" />
-                </div>
-                <button className="wp-change-btn">Change</button>
-              </div>
+              <div className="wp-label">Color</div>
+              <input
+                type="color"
+                className="wp-input"
+                style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
+                value={props.color || '#06b6d4'}
+                onChange={(e) => handleUpdate({ color: e.target.value })}
+              />
             </div>
             <div>
-              <div className="wp-label">Icon color</div>
-              <div
-                className="wp-color-swatch-blue"
-                onClick={() => setIconColor(iconColor === '#1e40af' ? '#3b82f6' : '#1e40af')}
+               <div className="wp-label">Secondary Color</div>
+              <input
+                type="color"
+                className="wp-input"
+                style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
+                value={props.series2Color || '#ef4444'}
+                onChange={(e) => handleUpdate({ series2Color: e.target.value })}
               />
             </div>
           </div>
         </div>
 
-        {/* Number Format */}
+        {/* Visibility */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
-          <div className="wp-grid-2">
-            <div>
-              <div className="wp-label">Number Format</div>
-              <select className="wp-select" value={numberFormat} onChange={(e) => setNumberFormat(e.target.value)}>
-                <option>1,234</option>
-                <option>1234</option>
-                <option>1.2K</option>
-              </select>
-            </div>
-            <div>
-              <div className="wp-label">Suffix (optional)</div>
-              <input className="wp-input" placeholder="" />
-            </div>
+          <div className="wp-label">Options</div>
+          
+          <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+            <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Legend</span>
+            <div className={`prop-toggle${props.showLegend ? ' on' : ''}`} onClick={() => handleUpdate({ showLegend: !props.showLegend })} />
+          </div>
+
+          <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+            <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Grid</span>
+            <div className={`prop-toggle${props.showGrid ? ' on' : ''}`} onClick={() => handleUpdate({ showGrid: !props.showGrid })} />
+          </div>
+
+          <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+            <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Dots (Line)</span>
+            <div className={`prop-toggle${props.showDots ? ' on' : ''}`} onClick={() => handleUpdate({ showDots: !props.showDots })} />
           </div>
         </div>
 
-        {/* Color for increase / decrease */}
+        {/* Design Options */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
           <div className="wp-grid-2">
             <div>
-              <div className="wp-label">Color for increase</div>
-              <div className="wp-color-swatch-green" />
+              <div className="wp-label">Font Size</div>
+              <input
+                type="number"
+                className="wp-input"
+                value={props.fontSize || 11}
+                onChange={(e) => handleUpdate({ fontSize: Math.max(1, parseInt(e.target.value) || 11) })}
+              />
             </div>
             <div>
-              <div className="wp-label">Color for decrease</div>
-              <div className="wp-color-swatch-red" />
+              <div className="wp-label">Border Radius</div>
+              <input
+                 type="number"
+                className="wp-input"
+                value={props.radius || 15}
+                onChange={(e) => handleUpdate({ radius: Math.max(0, parseInt(e.target.value) || 0) })}
+              />
             </div>
           </div>
         </div>
@@ -260,7 +236,7 @@ export default function LeftPanel({
 
         {/* Delete Widget */}
         <div className="wp-section" style={{ borderBottom: 'none' }}>
-          <button className="wp-delete-btn-flat" onClick={() => onClose?.()}>
+          <button className="wp-delete-btn-flat" onClick={() => onRemoveBlock?.()}>
             <Trash2 size={14} />
             Delete Widget
           </button>

@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 
 export default function TopBar({
+  dashboardTitle, onUpdateDashboardTitle,
+  isPreviewMode, onSetPreviewMode,
   onRefresh, onUndo, onRedo, canUndo, canRedo,
   zoom, onZoom, leftOpen, rightOpen, onToggleLeft, onToggleRight,
   onApplyTemplate,
@@ -26,6 +28,7 @@ export default function TopBar({
 }) {
   const [templateOpen, setTemplateOpen] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
 
   const templateCards = [
     { id: 'starter', title: 'Medical Drive', desc: 'Matches the monitoring view', blocks: [1, 1, 1, 1, 3, 3] },
@@ -43,14 +46,32 @@ export default function TopBar({
         </div>
         <span className="breadcrumb">Dashboard Builder</span>
         <span className="breadcrumb-sep">&gt;</span>
-        <span className="breadcrumb current">Medical Drive Monitoring Dashboard</span>
-        <button className="icon-btn" title="Rename dashboard"><PenLine size={13} /></button>
+        {isEditingTitle ? (
+          <input
+            autoFocus
+            className="breadcrumb current"
+            style={{ border: '1px solid #d0d5dd', background: 'transparent', padding: '2px 6px', borderRadius: '4px', width: '250px', outline: 'none' }}
+            value={dashboardTitle}
+            onChange={(e) => onUpdateDashboardTitle(e.target.value)}
+            onBlur={() => setIsEditingTitle(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+          />
+        ) : (
+          <>
+            <span className="breadcrumb current" onClick={() => setIsEditingTitle(true)} style={{ cursor: 'pointer' }}>
+              {dashboardTitle || 'Untitled Dashboard'}
+            </span>
+            <button className="icon-btn" title="Rename dashboard" onClick={() => setIsEditingTitle(true)}>
+              <PenLine size={13} />
+            </button>
+          </>
+        )}
         <span className="draft-badge">Draft</span>
       </div>
 
       <div className="topbar-center">
-        <button className="mode-btn active">Design</button>
-        <button className="mode-btn">Preview</button>
+        <button className={`mode-btn ${!isPreviewMode ? 'active' : ''}`} onClick={() => onSetPreviewMode(false)}>Design</button>
+        <button className={`mode-btn ${isPreviewMode ? 'active' : ''}`} onClick={() => onSetPreviewMode(true)}>Preview</button>
         <button className="mode-btn"><Eye size={13} /> Settings</button>
       </div>
 
@@ -71,31 +92,6 @@ export default function TopBar({
           Save Draft
         </button>
 
-        <div className="template-pop-wrap">
-          <button className="btn btn-ghost" onClick={() => setTemplateOpen((v) => !v)}>
-            Layout
-          </button>
-          {templateOpen && (
-            <div className="template-popover">
-              <div className="template-popover-head">Choose a layout</div>
-              <div className="template-grid">
-                {templateCards.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    className="template-card"
-                    onClick={() => { onApplyTemplate(tpl.id); setTemplateOpen(false) }}
-                  >
-                    <div className="template-preview">
-                      {tpl.blocks.map((b, i) => <span key={`${tpl.id}-${i}`} style={{ gridColumn: `span ${b}` }} />)}
-                    </div>
-                    <div className="template-title">{tpl.title}</div>
-                    <div className="template-desc">{tpl.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
         <div className="template-pop-wrap">
           <button className="btn btn-cyan" onClick={() => setPublishOpen((v) => !v)} disabled={isExporting}>
