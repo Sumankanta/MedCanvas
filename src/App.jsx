@@ -12,6 +12,13 @@ let blockCounter   = 0
 let sectionCounter = 0
 const STORAGE_KEY = 'medical_dashboard_layout_v8'
 
+function getResponsiveMode() {
+  if (typeof window === 'undefined') return 'desktop'
+  if (window.innerWidth <= 640) return 'mobile'
+  if (window.innerWidth <= 1024) return 'tablet'
+  return 'desktop'
+}
+
 function nextBlockId()   { blockCounter   += 1; return `block-${blockCounter}`   }
 function nextSectionId() { sectionCounter += 1; return `section-${sectionCounter}` }
 function resetSectionCounter() { sectionCounter = 0 }
@@ -242,9 +249,12 @@ export default function App() {
   const [zoom,       setZoom]       = useState(100)
   const [isExporting, setIsExporting] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [browserMode, setBrowserMode] = useState(getResponsiveMode)
+  const [previewMode, setPreviewMode] = useState(null)
   const rootRef = useRef(null)
 
   const { sections, history, index, title, subtitle } = dashboardState
+  const responsiveMode = previewMode || browserMode
 
   useEffect(() => {
     try {
@@ -253,6 +263,30 @@ export default function App() {
       // ignore storage failures
     }
   }, [sections, title, subtitle])
+
+  useEffect(() => {
+    const handleResize = () => {
+      const nextMode = getResponsiveMode()
+      setBrowserMode(nextMode)
+      if (nextMode === 'mobile') {
+        setLeftOpen(false)
+        setRightOpen(false)
+      }
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const handleResponsiveModeChange = useCallback((mode) => {
+    setPreviewMode(mode)
+    setZoom(100)
+    if (mode === 'mobile') {
+      setLeftOpen(false)
+      setRightOpen(false)
+    }
+  }, [])
 
   const setDashboardTitle = useCallback((newTitle) => {
     setDashboardState(prev => ({ ...prev, title: newTitle }))
@@ -740,7 +774,7 @@ export default function App() {
   return (
     <div
       ref={rootRef}
-      className={`builder-root ${isPreviewMode ? 'is-preview' : ''}`}
+      className={`builder-root viewport-${responsiveMode} ${isPreviewMode ? 'is-preview' : ''}`}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       style={{ outline: 'none' }}
@@ -773,10 +807,10 @@ export default function App() {
         isExporting={isExporting}
       />
 
-      <div className={`workspace${leftOpen ? '' : ' left-hidden'}${rightOpen ? '' : ' right-hidden'}`}>
+      <div className={`workspace${(leftOpen && !isPreviewMode) ? '' : ' left-hidden'}${(rightOpen && !isPreviewMode) ? '' : ' right-hidden'}`}>
         <RightPanel
           side="left"
-          open={leftOpen}
+          open={leftOpen && !isPreviewMode}
           variables={data.statVariables}
           onAddBlock={(type) => {
             if (sections.length === 0) {
@@ -816,11 +850,13 @@ export default function App() {
           onRedo={redo}
           canUndo={index > 0}
           canRedo={index < history.length - 1}
+          responsiveMode={responsiveMode}
+          onResponsiveModeChange={handleResponsiveModeChange}
         />
 
         <LeftPanel
           side="right"
-          open={rightOpen}
+          open={rightOpen && !isPreviewMode}
           selectedBlock={selectedBlock}
           cols={selectedSectionCols}
           onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}

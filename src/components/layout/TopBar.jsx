@@ -89,7 +89,7 @@ export default function TopBar({
 
         <button className="btn btn-ghost" onClick={onRefresh} title="Save draft">
           <RefreshCw size={14} />
-          Save Draft
+          <span>Save Draft</span>
         </button>
 
 

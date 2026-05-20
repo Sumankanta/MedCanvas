@@ -82,7 +82,68 @@ function packWithoutOverlap(items, canvasWidth) {
   return out
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue }) {
+function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
+  if (!canvasWidth || responsiveMode === 'desktop') return null
+
+  const padding = responsiveMode === 'mobile' ? 12 : 16
+  const gap = responsiveMode === 'mobile' ? 12 : 16
+  const previewMinWidth = responsiveMode === 'mobile' ? 280 : 704
+  const layoutWidth = Math.max(canvasWidth, previewMinWidth)
+  const usableWidth = Math.max(240, layoutWidth - (padding * 2))
+  const columns = responsiveMode === 'mobile' || usableWidth < 560 ? 1 : 2
+  const columnWidth = Math.floor((usableWidth - (gap * (columns - 1))) / columns)
+  const heights = Array.from({ length: columns }, () => padding)
+  const rects = {}
+
+  const sorted = [...blocks].sort((a, b) => {
+    const ad = defaultSize(a.type)
+    const bd = defaultSize(b.type)
+    const ay = Number(a.props?.y ?? 16)
+    const by = Number(b.props?.y ?? 16)
+    const ax = Number(a.props?.x ?? 16)
+    const bx = Number(b.props?.x ?? 16)
+    const aw = Number(a.props?.width ?? ad.w)
+    const bw = Number(b.props?.width ?? bd.w)
+    return (ay - by) || (ax - bx) || (bw - aw)
+  })
+
+  for (const block of sorted) {
+    const defaults = defaultSize(block.type)
+    const savedW = Number(block.props?.width ?? defaults.w)
+    const savedH = Number(block.props?.height ?? defaults.h)
+    const isChartLike = !block.type?.startsWith('stat-')
+    const span = columns === 1 || isChartLike || savedW > columnWidth * 1.25 ? columns : 1
+    const slotWidth = span === columns ? usableWidth : columnWidth
+    const scale = Math.max(0.72, Math.min(1.18, slotWidth / Math.max(savedW, defaults.w)))
+    const minH = minHeightForType(block.type)
+    const maxH = block.type === 'table' ? 340 : isChartLike ? 420 : 180
+    const h = Math.round(clamp(savedH * scale, minH, maxH))
+
+    let col = 0
+    if (span === 1 && columns > 1) {
+      col = heights[0] <= heights[1] ? 0 : 1
+    }
+
+    const y = span === columns ? Math.max(...heights) : heights[col]
+    const x = padding + (col * (columnWidth + gap))
+
+    rects[block.id] = { x, y, w: slotWidth, h }
+
+    if (span === columns) {
+      const nextY = y + h + gap
+      for (let i = 0; i < columns; i += 1) heights[i] = nextY
+    } else {
+      heights[col] = y + h + gap
+    }
+  }
+
+  return {
+    rects,
+    height: Math.max(260, Math.max(...heights) + padding - gap),
+  }
+}
+
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, responsiveMode }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
@@ -92,10 +153,11 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
     h: Number(props.height ?? defaults.h),
   })
 
-  const x = liveRect.x
-  const y = liveRect.y
-  const w = liveRect.w
-  const h = liveRect.h
+  const isResponsiveLayout = Boolean(displayRect)
+  const x = displayRect?.x ?? liveRect.x
+  const y = displayRect?.y ?? liveRect.y
+  const w = displayRect?.w ?? liveRect.w
+  const h = displayRect?.h ?? liveRect.h
   const liveRectRef = useRef(liveRect)
   const [isHovered, setIsHovered] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -115,6 +177,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   }, [liveRect])
 
   useEffect(() => {
+    if (isResponsiveLayout) return
     if (!canvasWidth || canvasWidth <= 0) return
     const minW = minWidthForType(block.type)
     const maxW = Math.max(minW, canvasWidth - 16)
@@ -126,9 +189,10 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       setLiveRect(next)
       onUpdateBlock(block.id, { x: nextX, width: nextW }, { skipHistory: true })
     }
-  }, [block.id, canvasWidth, onUpdateBlock])
+  }, [block.id, block.type, canvasWidth, isResponsiveLayout, onUpdateBlock])
 
   function onDragStart(e) {
+    if (isResponsiveLayout) return
     e.preventDefault()
     e.stopPropagation()
     onSelect(block.id)
@@ -170,6 +234,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   }
 
   function onResizeStart(e) {
+    if (isResponsiveLayout) return
     e.preventDefault()
     e.stopPropagation()
     onSelect(block.id)
@@ -252,7 +317,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   return (
     <>
       <div
-        className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
+        className={`abs-widget${isResponsiveLayout ? ' abs-widget--responsive' : ''}${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
         style={{ left: x, top: y, width: w, height: h }}
         onMouseDown={() => onSelect(block.id)}
         onClick={(e) => { e.stopPropagation(); onSelect(block.id) }}
@@ -271,14 +336,15 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
           onSelect={() => onSelect(block.id)}
           liveWidth={w}
           liveHeight={h}
+          responsiveMode={responsiveMode}
         />
 
-        <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
+        {!isResponsiveLayout && <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
             <path d="M10 1L1 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M10 5.5L5.5 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-        </div>
+        </div>}
       </div>
       
       {(isDragging || isResizing) && guides.v.map(gx => (
@@ -298,6 +364,7 @@ export default function CanvasSection({
   onAddBlockToSection,
   dragHandleProps, isDraggingSection,
   snapToGrid, showGrid, gridSize = 24, snapValue,
+  responsiveMode = 'desktop',
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -308,8 +375,13 @@ export default function CanvasSection({
   const isPackingRef = useRef(false)
 
   const blocks = section.blocks || []
+  const responsiveLayout = useMemo(
+    () => buildResponsiveLayout(blocks, canvasWidth, responsiveMode),
+    [blocks, canvasWidth, responsiveMode],
+  )
 
   const sectionHeight = useMemo(() => {
+    if (responsiveLayout?.height) return responsiveLayout.height
     if (blocks.length === 0) return 240
     const maxBottom = blocks.reduce((acc, b) => {
       const d = defaultSize(b.type)
@@ -318,7 +390,7 @@ export default function CanvasSection({
       return Math.max(acc, by + bh)
     }, 0)
     return Math.max(260, maxBottom + 16)
-  }, [blocks])
+  }, [blocks, responsiveLayout])
 
   useEffect(() => {
     const node = canvasRef.current
@@ -333,6 +405,7 @@ export default function CanvasSection({
   }, [blocks.length, collapsed])
 
   useEffect(() => {
+    if (responsiveMode !== 'desktop') return
     if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1 || isPackingRef.current) return
 
     const current = blocks.map((b) => {
@@ -375,7 +448,7 @@ export default function CanvasSection({
       isPackingRef.current = false
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [blocks, canvasWidth, onUpdateSection, section.id])
+  }, [blocks, canvasWidth, onUpdateSection, responsiveMode, section.id])
 
   function handleSectionDrop(e) {
     e.preventDefault()
@@ -480,6 +553,7 @@ export default function CanvasSection({
               className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}${showGrid ? ' section-free-canvas--grid' : ''}`}
               style={{
                 minHeight: sectionHeight,
+                height: responsiveLayout ? sectionHeight : undefined,
                 ...(showGrid ? {
                   '--grid-size': `${gridSize}px`,
                 } : {}),
@@ -488,16 +562,17 @@ export default function CanvasSection({
             >
               {blocks.map((block) => (
                 (() => {
-                  const d = defaultSize(block.type)
+                  const displayRect = responsiveLayout?.rects?.[block.id]
                   const otherRects = blocks
                     .filter((b) => b.id !== block.id)
                     .map((b) => {
                       const bd = defaultSize(b.type)
+                      const otherDisplayRect = responsiveLayout?.rects?.[b.id]
                       return {
-                        x: Number(b.props?.x ?? 16),
-                        y: Number(b.props?.y ?? 16),
-                        w: Number(b.props?.width ?? bd.w),
-                        h: Number(b.props?.height ?? bd.h),
+                        x: Number(otherDisplayRect?.x ?? b.props?.x ?? 16),
+                        y: Number(otherDisplayRect?.y ?? b.props?.y ?? 16),
+                        w: Number(otherDisplayRect?.w ?? b.props?.width ?? bd.w),
+                        h: Number(otherDisplayRect?.h ?? b.props?.height ?? bd.h),
                       }
                     })
                   return (
@@ -514,6 +589,8 @@ export default function CanvasSection({
                   canvasWidth={canvasWidth}
                   otherRects={otherRects}
                   snapValue={snapValue}
+                  displayRect={displayRect}
+                  responsiveMode={responsiveMode}
                 />
                   )
                 })()

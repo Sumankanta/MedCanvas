@@ -8,7 +8,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Calendar, Grid3X3, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, Magnet, PenLine, ChevronDown } from 'lucide-react'
+import { Calendar, Grid3X3, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, Magnet, PenLine, ChevronDown } from 'lucide-react'
 import CanvasSection from './CanvasSection'
 
 // ── Sortable wrapper for a section ─────────────────────────────────────────
@@ -45,6 +45,7 @@ export default function CanvasArea({
   onAddBlockToSection, onReorderBlocksInSection,
   moveBlockBetweenSections,
   zoom, onZoom, onUndo, onRedo, canUndo, canRedo,
+  responsiveMode = 'desktop', onResponsiveModeChange,
 }) {
   const [isDragOver,      setIsDragOver]      = useState(false)
   const [activeId,        setActiveId]        = useState(null) // Can be sectionId or blockId
@@ -54,6 +55,11 @@ export default function CanvasArea({
   const [showGrid,        setShowGrid]        = useState(true)
   const [snapToGrid,      setSnapToGrid]      = useState(true)
   const GRID_SIZE = 24 // px
+  const viewportLabels = {
+    desktop: 'Desktop preview, 1120 pixels',
+    tablet: 'Tablet preview, 768 pixels',
+    mobile: 'Mobile preview, 390 pixels',
+  }
 
   const snapValue = useCallback((val) => {
     if (!snapToGrid) return val
@@ -134,7 +140,7 @@ export default function CanvasArea({
   }
 
   return (
-    <main className="canvas-area">
+    <main className={`canvas-area canvas-area--${responsiveMode}`}>
       <div className="canvas-toolbar">
         <div className="canvas-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="toolbar-group">
@@ -147,9 +153,33 @@ export default function CanvasArea({
           </div>
           <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
           <div className="toolbar-group responsive-switcher">
-            <button className="tb-btn active" title="Desktop"><Monitor size={14} /></button>
-            <button className="tb-btn" title="Tablet"><Tablet size={14} /></button>
-            <button className="tb-btn" title="Mobile"><Smartphone size={14} /></button>
+            <button
+              className={`tb-btn${responsiveMode === 'desktop' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('desktop')}
+              title={viewportLabels.desktop}
+              aria-label={viewportLabels.desktop}
+              aria-pressed={responsiveMode === 'desktop'}
+            >
+              <Monitor size={14} />
+            </button>
+            <button
+              className={`tb-btn${responsiveMode === 'tablet' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('tablet')}
+              title={viewportLabels.tablet}
+              aria-label={viewportLabels.tablet}
+              aria-pressed={responsiveMode === 'tablet'}
+            >
+              <Tablet size={14} />
+            </button>
+            <button
+              className={`tb-btn${responsiveMode === 'mobile' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('mobile')}
+              title={viewportLabels.mobile}
+              aria-label={viewportLabels.mobile}
+              aria-pressed={responsiveMode === 'mobile'}
+            >
+              <Smartphone size={14} />
+            </button>
           </div>
         </div>
 
@@ -305,6 +335,7 @@ export default function CanvasArea({
                               showGrid={showGrid}
                               gridSize={GRID_SIZE}
                               snapValue={snapValue}
+                              responsiveMode={responsiveMode}
                             />
                           )}
                         </SortableSection>
