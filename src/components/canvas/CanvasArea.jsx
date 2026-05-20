@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, KeyboardSensor, useSensor, useSensors,
@@ -8,7 +8,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Calendar, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, PenLine, ChevronDown } from 'lucide-react'
+import { Calendar, Grid3X3, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, Magnet, PenLine, ChevronDown } from 'lucide-react'
 import CanvasSection from './CanvasSection'
 
 // ── Sortable wrapper for a section ─────────────────────────────────────────
@@ -51,6 +51,14 @@ export default function CanvasArea({
   const [activeType,      setActiveType]      = useState(null) // 'section' or 'block'
   const [editingTitle,    setEditingTitle]    = useState(false)
   const [editingSubtitle, setEditingSubtitle] = useState(false)
+  const [showGrid,        setShowGrid]        = useState(true)
+  const [snapToGrid,      setSnapToGrid]      = useState(true)
+  const GRID_SIZE = 24 // px
+
+  const snapValue = useCallback((val) => {
+    if (!snapToGrid) return val
+    return Math.round(val / GRID_SIZE) * GRID_SIZE
+  }, [snapToGrid])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -147,10 +155,22 @@ export default function CanvasArea({
 
         <div className="canvas-toolbar-center" style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span className="canvas-info" style={{ margin: 0 }}>Grid</span>
-            <button className="switch is-on" title="Toggle grid" />
-            <span className="canvas-info" style={{ margin: 0, marginLeft: 8 }}>Snap to grid</span>
-            <button className="switch is-on" title="Snap to grid" />
+            <button
+              className={`grid-toggle-btn ${showGrid ? 'active' : ''}`}
+              onClick={() => setShowGrid((v) => !v)}
+              title={showGrid ? 'Hide grid' : 'Show grid'}
+            >
+              <Grid3X3 size={13} />
+              <span>Grid</span>
+            </button>
+            <button
+              className={`grid-toggle-btn ${snapToGrid ? 'active' : ''}`}
+              onClick={() => setSnapToGrid((v) => !v)}
+              title={snapToGrid ? 'Disable snap to grid' : 'Enable snap to grid'}
+            >
+              <Magnet size={13} />
+              <span>Snap</span>
+            </button>
           </div>
 
           <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
@@ -174,7 +194,7 @@ export default function CanvasArea({
 
       {/* ── Viewport ── */}
       <div
-        className="canvas-viewport"
+        className={`canvas-viewport${showGrid ? ' canvas-viewport--grid' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
         onDrop={handleCanvasDrop}
@@ -281,6 +301,10 @@ export default function CanvasArea({
                               isDraggingSection={isDraggingSection}
                               activeId={activeId}
                               activeType={activeType}
+                              snapToGrid={snapToGrid}
+                              showGrid={showGrid}
+                              gridSize={GRID_SIZE}
+                              snapValue={snapValue}
                             />
                           )}
                         </SortableSection>

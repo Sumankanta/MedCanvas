@@ -10,12 +10,16 @@ function clamp(n, min, max) {
 }
 
 function defaultSize(type) {
-  if (type?.startsWith('stat-')) return { w: 300, h: 180 }
-  return { w: 360, h: 380 }
+  if (type?.startsWith('stat-')) return { w: 312, h: 192 }
+  return { w: 360, h: 384 }
 }
 
 function minWidthForType(type) {
-  return type?.startsWith('stat-') ? 120 : 180
+  return type?.startsWith('stat-') ? 120 : 192
+}
+
+function minHeightForType(type) {
+  return type?.startsWith('stat-') ? 120 : 192
 }
 
 function rectOverlaps(a, b) {
@@ -28,7 +32,7 @@ function rectOverlaps(a, b) {
 }
 
 function resolveNoOverlap(candidate, others) {
-  const step = 12
+  const step = 24
   const next = { ...candidate }
   let guard = 0
   while (others.some((r) => rectOverlaps(next, r)) && guard < 500) {
@@ -39,10 +43,10 @@ function resolveNoOverlap(candidate, others) {
 }
 
 function packWithoutOverlap(items, canvasWidth) {
-  const padding = 12
-  const gap = 12
-  const step = 12
-  const maxW = Math.max(220, canvasWidth - (padding * 2))
+  const padding = 24
+  const gap = 24
+  const step = 24
+  const maxW = Math.max(216, canvasWidth - (padding * 2))
   const placed = []
   const out = []
 
@@ -78,12 +82,12 @@ function packWithoutOverlap(items, canvasWidth) {
   return out
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects }) {
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
-    x: Number(props.x ?? 16),
-    y: Number(props.y ?? 16),
+    x: Number(props.x ?? 24),
+    y: Number(props.y ?? 24),
     w: Number(props.width ?? defaults.w),
     h: Number(props.height ?? defaults.h),
   })
@@ -99,8 +103,8 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
 
   useEffect(() => {
     setLiveRect({
-      x: Number(props.x ?? 16),
-      y: Number(props.y ?? 16),
+      x: Number(props.x ?? 24),
+      y: Number(props.y ?? 24),
       w: Number(props.width ?? defaults.w),
       h: Number(props.height ?? defaults.h),
     })
@@ -139,8 +143,12 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       const canvas = canvasRef.current
       const rect = canvas?.getBoundingClientRect()
       if (!rect) return
-      const nextX = clamp(startLeft + (ev.clientX - startX), 0, Math.max(0, rect.width - w))
-      const nextY = clamp(startTop + (ev.clientY - startY), 0, 3000)
+      const rawX = startLeft + (ev.clientX - startX)
+      const rawY = startTop + (ev.clientY - startY)
+      const snappedX = snapValue ? snapValue(rawX) : rawX
+      const snappedY = snapValue ? snapValue(rawY) : rawY
+      const nextX = clamp(snappedX, 0, Math.max(0, rect.width - w))
+      const nextY = clamp(snappedY, 0, 3000)
       const placed = resolveNoOverlap({ x: Math.round(nextX), y: Math.round(nextY), w, h }, otherRects)
       setLiveRect((prev) => ({
         ...prev,
@@ -173,8 +181,12 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
     setIsResizing(true)
 
     function move(ev) {
-      const nextW = clamp(startW + (ev.clientX - startX), minWidthForType(block.type), 1200)
-      const nextH = clamp(startH + (ev.clientY - startY), block.type?.startsWith('stat-') ? 120 : 180, 1000)
+      const rawW = startW + (ev.clientX - startX)
+      const rawH = startH + (ev.clientY - startY)
+      const snappedW = snapValue ? snapValue(rawW) : rawW
+      const snappedH = snapValue ? snapValue(rawH) : rawH
+      const nextW = clamp(snappedW, minWidthForType(block.type), 1200)
+      const nextH = clamp(snappedH, minHeightForType(block.type), 1000)
       const placed = resolveNoOverlap({ x, y, w: Math.round(nextW), h: Math.round(nextH) }, otherRects)
       setLiveRect((prev) => ({
         ...prev,
@@ -196,34 +208,86 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
     window.addEventListener('mouseup', up)
   }
 
+  const guides = useMemo(() => {
+    if (!isDragging && !isResizing) return { v: [], h: [] }
+    const current = liveRect
+    const vGuides = new Set()
+    const hGuides = new Set()
+    
+    // Check points for 'current'
+    const currL = current.x
+    const currR = current.x + current.w
+    const currCX = current.x + current.w / 2
+    const currT = current.y
+    const currB = current.y + current.h
+    const currCY = current.y + current.h / 2
+    
+    const TOLERANCE = 1
+    
+    for (const r of otherRects) {
+      const rL = r.x
+      const rR = r.x + r.w
+      const rCX = r.x + r.w / 2
+      const rT = r.y
+      const rB = r.y + r.h
+      const rCY = r.y + r.h / 2
+      
+      // Vertical alignments
+      if (Math.abs(currL - rL) <= TOLERANCE || Math.abs(currL - rR) <= TOLERANCE) vGuides.add(currL)
+      if (Math.abs(currR - rL) <= TOLERANCE || Math.abs(currR - rR) <= TOLERANCE) vGuides.add(currR)
+      if (Math.abs(currCX - rCX) <= TOLERANCE) vGuides.add(currCX)
+      
+      // Horizontal alignments
+      if (Math.abs(currT - rT) <= TOLERANCE || Math.abs(currT - rB) <= TOLERANCE) hGuides.add(currT)
+      if (Math.abs(currB - rT) <= TOLERANCE || Math.abs(currB - rB) <= TOLERANCE) hGuides.add(currB)
+      if (Math.abs(currCY - rCY) <= TOLERANCE) hGuides.add(currCY)
+    }
+    
+    return {
+      v: Array.from(vGuides),
+      h: Array.from(hGuides)
+    }
+  }, [liveRect, isDragging, isResizing, otherRects])
+
   return (
-    <div
-      className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
-      style={{ left: x, top: y, width: w, height: h }}
-      onMouseDown={() => onSelect(block.id)}
-      onClick={(e) => { e.stopPropagation(); onSelect(block.id) }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <>
+      <div
+        className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
+        style={{ left: x, top: y, width: w, height: h }}
+        onMouseDown={() => onSelect(block.id)}
+        onClick={(e) => { e.stopPropagation(); onSelect(block.id) }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
 
 
-      <CanvasBlock
-        block={block}
-        data={data}
-        selected={selected}
-        onRemove={onRemove}
-        onDuplicate={onDuplicate}
-        onDragStart={onDragStart}
-        onSelect={() => onSelect(block.id)}
-      />
+        <CanvasBlock
+          block={block}
+          data={data}
+          selected={selected}
+          onRemove={onRemove}
+          onDuplicate={onDuplicate}
+          onDragStart={onDragStart}
+          onSelect={() => onSelect(block.id)}
+          liveWidth={w}
+          liveHeight={h}
+        />
 
-      <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M10 1L1 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M10 5.5L5.5 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
+        <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M10 1L1 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M10 5.5L5.5 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
       </div>
-    </div>
+      
+      {(isDragging || isResizing) && guides.v.map(gx => (
+        <div key={`v-${gx}`} className="snap-guide snap-guide--v" style={{ left: gx }} />
+      ))}
+      {(isDragging || isResizing) && guides.h.map(gy => (
+        <div key={`h-${gy}`} className="snap-guide snap-guide--h" style={{ top: gy }} />
+      ))}
+    </>
   )
 })
 
@@ -233,6 +297,7 @@ export default function CanvasSection({
   onUpdateSection, onRemoveSection,
   onAddBlockToSection,
   dragHandleProps, isDraggingSection,
+  snapToGrid, showGrid, gridSize = 24, snapValue,
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -412,8 +477,13 @@ export default function CanvasSection({
           ) : (
             <div
               ref={canvasRef}
-              className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}`}
-              style={{ minHeight: sectionHeight }}
+              className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}${showGrid ? ' section-free-canvas--grid' : ''}`}
+              style={{
+                minHeight: sectionHeight,
+                ...(showGrid ? {
+                  '--grid-size': `${gridSize}px`,
+                } : {}),
+              }}
               onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
             >
               {blocks.map((block) => (
@@ -443,6 +513,7 @@ export default function CanvasSection({
                   canvasRef={canvasRef}
                   canvasWidth={canvasWidth}
                   otherRects={otherRects}
+                  snapValue={snapValue}
                 />
                   )
                 })()
