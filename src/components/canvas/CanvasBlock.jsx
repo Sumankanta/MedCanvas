@@ -46,9 +46,6 @@ const CFG = {
   'stat-locations': { title: 'Camp Locations',       subtitle: 'Active sites',          color: '#8b5cf6' },
   'stat-tests':     { title: 'Tests Conducted',      subtitle: 'Total tests run',       color: '#f59e0b' },
   'chart-hbar':     { title: 'Horizontal Bar',       subtitle: 'Ranked metrics',        color: '#60a5fa' },
-  'layout-text':    { title: 'Text Block',           subtitle: 'Custom description',    color: '#94a3b8' },
-  'layout-image':   { title: 'Image Placeholder',    subtitle: 'Upload required',       color: '#94a3b8' },
-  'layout-divider': { title: 'Divider',              subtitle: 'Visual separation',     color: '#cbd5e1' },
 }
 
 function axisProps(fontSize) {
@@ -553,33 +550,8 @@ function renderChart(type, d, opts, blockId) {
       )
     }
 
-    case 'layout-text':
-      return (
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, height: '100%', overflow: 'hidden' }}>
-          <h2 style={{ margin: 0, fontSize: Math.max(16, opts.fontSize + 4), color: '#f8fafc', fontWeight: 600 }}>{opts.title || 'Text Title'}</h2>
-          <p style={{ margin: 0, fontSize: Math.max(12, opts.fontSize), color: '#94a3b8', lineHeight: 1.5 }}>{opts.subtitle || 'Add a descriptive text or instructions for the user here.'}</p>
-        </div>
-      )
-
-    case 'layout-image':
-      return (
-        <div style={{ width: '100%', height: '100%', background: 'linear-gradient(45deg, #0b1b38, #1e293b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', borderRadius: 8 }}>
-          <div style={{ textAlign: 'center' }}>
-            <span style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>🖼️</span>
-            <span style={{ fontSize: opts.fontSize }}>Image Placeholder</span>
-          </div>
-        </div>
-      )
-
-    case 'layout-divider':
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%', padding: '0 16px' }}>
-          <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.2), transparent)' }} />
-        </div>
-      )
-
     default:
-      return <div style={{ color: '#475569', fontSize: 11, padding: 16 }}>Unknown block type: {block.type}</div>
+      return <div style={{ color: '#475569', fontSize: 11, padding: 16 }}>Unknown block type: {type}</div>
   }
 }
 

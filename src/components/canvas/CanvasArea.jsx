@@ -290,15 +290,24 @@ export default function CanvasArea({
                   onKeyDown={(e) => e.key === 'Enter' && setEditingSubtitle(false)}
                 />
               ) : (
-                <p onClick={() => setEditingSubtitle(true)} className="dashboard-subtitle">
-                  {dashboardSubtitle || 'Add a subtitle'} <PenLine size={12} style={{ color: '#98a2b3' }} />
-                </p>
+                <div className="dashboard-subtitle-row">
+                  <p onClick={() => setEditingSubtitle(true)} className="dashboard-subtitle">
+                    {dashboardSubtitle || 'Add a subtitle'}
+                  </p>
+                  <button
+                    type="button"
+                    className="dashboard-edit-btn"
+                    onClick={() => setEditingSubtitle(true)}
+                    aria-label="Edit subtitle"
+                    title="Edit subtitle"
+                  >
+                    <PenLine size={12} style={{ color: '#98a2b3' }} />
+                  </button>
+                </div>
               )}
             </div>
             <div className="dashboard-header-actions">
-              {responsiveMode !== 'mobile' && (
-                <button className="date-filter dashboard-date-filter dashboard-date-filter--range"><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
-              )}
+              <button className="date-filter dashboard-date-filter dashboard-date-filter--range"><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
               <button className="date-filter dashboard-date-filter dashboard-date-filter--filters"><SlidersHorizontal size={14} color="#667085" /> Filters</button>
             </div>
           </div>
