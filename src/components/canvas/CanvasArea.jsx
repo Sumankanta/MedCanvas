@@ -46,6 +46,7 @@ export default function CanvasArea({
   onAddBlockToSection, onReorderBlocksInSection,
   moveBlockBetweenSections,
   zoom, onZoom, onUndo, onRedo, canUndo, canRedo,
+  responsiveMode = 'desktop', onResponsiveModeChange,
 }) {
   const [isDragOver,      setIsDragOver]      = useState(false)
   const [activeId,        setActiveId]        = useState(null) // Can be sectionId or blockId
@@ -54,7 +55,6 @@ export default function CanvasArea({
   const [editingSubtitle, setEditingSubtitle] = useState(false)
   const [showGrid,        setShowGrid]        = useState(true)
   const [snapToGrid,      setSnapToGrid]      = useState(true)
-  const [viewportMode,    setViewportMode]    = useState('desktop')
   const GRID_SIZE = 24 // px
   const effectiveShowGrid = isPreviewMode ? false : showGrid
   const effectiveSnapToGrid = isPreviewMode ? false : snapToGrid
@@ -63,11 +63,11 @@ export default function CanvasArea({
     tablet: 920,
     mobile: 390,
   }
-  const viewportWidth = viewportWidths[viewportMode] || viewportWidths.desktop
+  const viewportWidth = viewportWidths[responsiveMode] || viewportWidths.desktop
   const viewportLabels = {
-    desktop: 'Desktop',
-    tablet: 'Tablet',
-    mobile: 'Mobile',
+    desktop: 'Desktop preview, 1120 pixels',
+    tablet: 'Tablet preview, 768 pixels',
+    mobile: 'Mobile preview, 390 pixels',
   }
 
   const snapValue = useCallback((val) => {
@@ -157,8 +157,8 @@ export default function CanvasArea({
   }
 
   return (
-    <main className="canvas-area">
-      <div className={`canvas-toolbar${isPreviewMode ? ' canvas-toolbar--preview' : ''}`}>
+    <main className={`canvas-area canvas-area--${responsiveMode}`}>
+      <div className="canvas-toolbar">
         <div className="canvas-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="toolbar-group">
             <button className="tb-btn" onClick={onUndo} disabled={!canUndo || isPreviewMode} title="Undo" style={{ opacity: canUndo && !isPreviewMode ? 1 : 0.35 }}>
@@ -169,28 +169,31 @@ export default function CanvasArea({
             </button>
           </div>
           <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
-          <div className="toolbar-group responsive-switcher" role="group" aria-label="Responsive viewport">
+          <div className="toolbar-group responsive-switcher">
             <button
-              className={`tb-btn${viewportMode === 'desktop' ? ' active' : ''}`}
-              title="Desktop"
-              aria-pressed={viewportMode === 'desktop'}
-              onClick={() => setViewportMode('desktop')}
+              className={`tb-btn${responsiveMode === 'desktop' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('desktop')}
+              title={viewportLabels.desktop}
+              aria-label={viewportLabels.desktop}
+              aria-pressed={responsiveMode === 'desktop'}
             >
               <Monitor size={14} />
             </button>
             <button
-              className={`tb-btn${viewportMode === 'tablet' ? ' active' : ''}`}
-              title="Tablet"
-              aria-pressed={viewportMode === 'tablet'}
-              onClick={() => setViewportMode('tablet')}
+              className={`tb-btn${responsiveMode === 'tablet' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('tablet')}
+              title={viewportLabels.tablet}
+              aria-label={viewportLabels.tablet}
+              aria-pressed={responsiveMode === 'tablet'}
             >
               <Tablet size={14} />
             </button>
             <button
-              className={`tb-btn${viewportMode === 'mobile' ? ' active' : ''}`}
-              title="Mobile"
-              aria-pressed={viewportMode === 'mobile'}
-              onClick={() => setViewportMode('mobile')}
+              className={`tb-btn${responsiveMode === 'mobile' ? ' active' : ''}`}
+              onClick={() => onResponsiveModeChange?.('mobile')}
+              title={viewportLabels.mobile}
+              aria-label={viewportLabels.mobile}
+              aria-pressed={responsiveMode === 'mobile'}
             >
               <Smartphone size={14} />
             </button>
@@ -246,19 +249,19 @@ export default function CanvasArea({
 
       {/* ── Viewport ── */}
       <div
-        className={`canvas-viewport canvas-viewport--${viewportMode}${effectiveShowGrid ? ' canvas-viewport--grid' : ''}${isPreviewMode ? ' canvas-viewport--preview' : ''}`}
+        className={`canvas-viewport canvas-viewport--${responsiveMode}${effectiveShowGrid ? ' canvas-viewport--grid' : ''}${isPreviewMode ? ' canvas-viewport--preview' : ''}`}
         onDragOver={isPreviewMode ? undefined : (e) => { e.preventDefault(); setIsDragOver(true) }}
         onDragLeave={isPreviewMode ? undefined : (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
         onDrop={isPreviewMode ? undefined : handleCanvasDrop}
         onClick={isPreviewMode ? undefined : (e) => { if (e.target === e.currentTarget) onSelect(null) }}
       >
         <div
-          className={`canvas-surface canvas-surface--${viewportMode}`}
+          className={`canvas-surface canvas-surface--${responsiveMode}`}
           style={{
             transform: `scale(${zoom / 100})`,
             width: `min(${viewportWidth}px, 100%)`,
           }}
-          data-viewport={viewportLabels[viewportMode]}
+          data-viewport={viewportLabels[responsiveMode]}
         >
           <div className="dashboard-header-block dashboard-header-block--responsive">
             <div className="dashboard-header-copy">
@@ -293,7 +296,7 @@ export default function CanvasArea({
               )}
             </div>
             <div className="dashboard-header-actions">
-              {viewportMode !== 'mobile' && (
+              {responsiveMode !== 'mobile' && (
                 <button className="date-filter dashboard-date-filter dashboard-date-filter--range"><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
               )}
               <button className="date-filter dashboard-date-filter dashboard-date-filter--filters"><SlidersHorizontal size={14} color="#667085" /> Filters</button>
@@ -351,6 +354,7 @@ export default function CanvasArea({
                         gridSize={GRID_SIZE}
                         snapValue={snapValue}
                         isPreviewMode
+                        responsiveMode={responsiveMode}
                       />
                     ))}
                   </div>
@@ -369,8 +373,8 @@ export default function CanvasArea({
                     >
                       <div className="sections-list">
                         {sections.map((section) => (
-                          <SortableSection key={section.id} section={section}>
-                            {({ dragHandleProps, isDraggingSection }) => (
+                        <SortableSection key={section.id} section={section}>
+                          {({ dragHandleProps, isDraggingSection }) => (
                               <CanvasSection
                               section={section}
                               data={data}
@@ -392,6 +396,7 @@ export default function CanvasArea({
                                 gridSize={GRID_SIZE}
                                 snapValue={snapValue}
                                 isPreviewMode={false}
+                                responsiveMode={responsiveMode}
                               />
                             )}
                           </SortableSection>
