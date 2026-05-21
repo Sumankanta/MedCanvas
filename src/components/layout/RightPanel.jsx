@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   BarChart3,
+  Radar,
   Columns3,
   GripVertical,
   LineChart,
@@ -27,15 +28,19 @@ const GROUPS = [
   {
     title: 'Charts',
     items: [
-      { type: 'chart-bar',       name: 'Bar Chart',         Icon: BarChart3 },
-      { type: 'chart-hbar',      name: 'Horizontal Bar',    Icon: BarChart3 },
-      { type: 'chart-stacked',   name: 'Stacked Column',    Icon: Columns3 },
-      { type: 'chart-line',      name: 'Line Chart',        Icon: LineChart },
-      { type: 'chart-area',      name: 'Area Chart',        Icon: LineChart },
-      { type: 'chart-pie',       name: 'Pie Chart',         Icon: PieChart },
-      { type: 'chart-donut',     name: 'Donut Chart',       Icon: PieChart },
-      { type: 'chart-radialbar', name: 'Radial Bar',        Icon: Target },
-      { type: 'chart-scatter',   name: 'Scatter Chart',     Icon: Target },
+      { type: 'chart-bar',          name: 'Bar Chart',          Icon: BarChart3 },
+      { type: 'chart-hbar',         name: 'Horizontal Bar',     Icon: BarChart3 },
+      { type: 'chart-stacked',      name: 'Stacked Column',     Icon: Columns3 },
+      { type: 'chart-line',         name: 'Line Chart',         Icon: LineChart },
+      { type: 'chart-area',         name: 'Area Chart',         Icon: LineChart },
+      { type: 'chart-combo',        name: 'Combo Chart',        Icon: BarChart3 },
+      { type: 'chart-stackedarea',   name: 'Stacked Area',       Icon: LineChart },
+      { type: 'chart-sparkline',    name: 'Sparkline',          Icon: LineChart },
+      { type: 'chart-radar',        name: 'Radar Chart',        Icon: Radar },
+      { type: 'chart-pie',          name: 'Pie Chart',          Icon: PieChart },
+      { type: 'chart-donut',        name: 'Donut Chart',        Icon: PieChart },
+      { type: 'chart-radialbar',    name: 'Radial Bar',         Icon: Target },
+      { type: 'chart-scatter',      name: 'Scatter Chart',      Icon: Target },
     ],
   },
   {

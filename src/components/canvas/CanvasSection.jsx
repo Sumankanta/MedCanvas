@@ -82,7 +82,7 @@ function packWithoutOverlap(items, canvasWidth) {
   return out
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue }) {
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, isPreviewMode = false }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
@@ -131,7 +131,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   function onDragStart(e) {
     e.preventDefault()
     e.stopPropagation()
-    onSelect(block.id)
+    onSelect?.(block.id)
 
     const startX = e.clientX
     const startY = e.clientY
@@ -159,7 +159,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
 
     function up() {
       const finalRect = liveRectRef.current
-      onUpdateBlock(block.id, { x: finalRect.x, y: finalRect.y })
+      onUpdateBlock?.(block.id, { x: finalRect.x, y: finalRect.y })
       setIsDragging(false)
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
@@ -172,7 +172,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   function onResizeStart(e) {
     e.preventDefault()
     e.stopPropagation()
-    onSelect(block.id)
+    onSelect?.(block.id)
 
     const startX = e.clientX
     const startY = e.clientY
@@ -198,7 +198,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
 
     function up() {
       const finalRect = liveRectRef.current
-      onUpdateBlock(block.id, { width: finalRect.w, height: finalRect.h })
+      onUpdateBlock?.(block.id, { width: finalRect.w, height: finalRect.h })
       setIsResizing(false)
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
@@ -254,8 +254,8 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       <div
         className={`abs-widget${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
         style={{ left: x, top: y, width: w, height: h }}
-        onMouseDown={() => onSelect(block.id)}
-        onClick={(e) => { e.stopPropagation(); onSelect(block.id) }}
+        onMouseDown={() => onSelect?.(block.id)}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(block.id) }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -268,17 +268,20 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
           onRemove={onRemove}
           onDuplicate={onDuplicate}
           onDragStart={onDragStart}
-          onSelect={() => onSelect(block.id)}
-          liveWidth={w}
-          liveHeight={h}
+          onSelect={() => onSelect?.(block.id)}
+          liveWidth={isPreviewMode ? (canvasWidth || w) : w}
+          liveHeight={isPreviewMode ? Math.max(250, h) : h}
+          isPreviewMode={isPreviewMode}
         />
 
-        <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
+        {!isPreviewMode && (
+          <div className="abs-widget-resize" onMouseDown={onResizeStart} title="Drag to resize">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
             <path d="M10 1L1 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M10 5.5L5.5 10" stroke="rgba(6,182,212,0.9)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-        </div>
+          </div>
+        )}
       </div>
       
       {(isDragging || isResizing) && guides.v.map(gx => (
@@ -298,6 +301,7 @@ export default function CanvasSection({
   onAddBlockToSection,
   dragHandleProps, isDraggingSection,
   snapToGrid, showGrid, gridSize = 24, snapValue,
+  isPreviewMode = false,
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -333,6 +337,7 @@ export default function CanvasSection({
   }, [blocks.length, collapsed])
 
   useEffect(() => {
+    if (isPreviewMode) return
     if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1 || isPackingRef.current) return
 
     const current = blocks.map((b) => {
@@ -375,7 +380,7 @@ export default function CanvasSection({
       isPackingRef.current = false
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [blocks, canvasWidth, onUpdateSection, section.id])
+  }, [blocks, canvasWidth, onUpdateSection, section.id, isPreviewMode])
 
   function handleSectionDrop(e) {
     e.preventDefault()
@@ -403,17 +408,21 @@ export default function CanvasSection({
 
   return (
     <div
-      className={`canvas-section${isDraggingSection ? ' section--dragging' : ''}${isDragOver ? ' section--dragover' : ''}`}
-      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
-      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
-      onDrop={handleSectionDrop}
+      className={`canvas-section${isDraggingSection ? ' section--dragging' : ''}${isDragOver ? ' section--dragover' : ''}${isPreviewMode ? ' section--preview' : ''}`}
+      onDragOver={isPreviewMode ? undefined : (e) => { e.preventDefault(); setIsDragOver(true) }}
+      onDragLeave={isPreviewMode ? undefined : (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
+      onDrop={isPreviewMode ? undefined : handleSectionDrop}
     >
       <div className="section-header">
-        <button className="section-drag-handle" {...dragHandleProps} title="Drag section">
-          <GripVertical size={14} />
-        </button>
+        {!isPreviewMode ? (
+          <button className="section-drag-handle" {...dragHandleProps} title="Drag section">
+            <GripVertical size={14} />
+          </button>
+        ) : (
+          <div className="section-preview-mark" aria-hidden="true" />
+        )}
 
-        <button className="section-collapse-btn" onClick={() => setCollapsed((c) => !c)}>
+        <button className="section-collapse-btn" onClick={() => !isPreviewMode && setCollapsed((c) => !c)} disabled={isPreviewMode}>
           {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
 
@@ -434,7 +443,7 @@ export default function CanvasSection({
               <button className="section-title-cancel" onClick={() => { setTitleDraft(section.title || 'Section'); setEditingTitle(false) }}><XIcon size={11} /></button>
             </div>
           ) : (
-            <span className="section-title" onDoubleClick={() => setEditingTitle(true)} title="Double-click to rename">
+            <span className="section-title" onDoubleClick={() => !isPreviewMode && setEditingTitle(true)} title={isPreviewMode ? 'Preview mode' : 'Double-click to rename'}>
               {section.title || 'Section'}
             </span>
           )}
@@ -444,19 +453,21 @@ export default function CanvasSection({
           {blocks.length} widget{blocks.length !== 1 ? 's' : ''}
         </span>
 
-        {!editingTitle && (
+        {!editingTitle && !isPreviewMode && (
           <button className="section-action-btn" onClick={() => setEditingTitle(true)} title="Rename">
             <Pencil size={12} />
           </button>
         )}
 
-        <button
-          className="section-action-btn section-action-btn--danger"
-          onClick={() => onRemoveSection(section.id)}
-          title="Remove section"
-        >
-          <Trash2 size={12} />
-        </button>
+        {!isPreviewMode && (
+          <button
+            className="section-action-btn section-action-btn--danger"
+            onClick={() => onRemoveSection(section.id)}
+            title="Remove section"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
 
       {!collapsed && (
@@ -469,7 +480,8 @@ export default function CanvasSection({
               </p>
               <button
                 className="section-add-first-btn"
-                onClick={() => onAddBlockToSection(section.id, 'chart-bar', 0, { x: 24, y: 24 })}
+                onClick={() => !isPreviewMode && onAddBlockToSection(section.id, 'chart-bar', 0, { x: 24, y: 24 })}
+                disabled={isPreviewMode}
               >
                 <Plus size={12} /> Add Bar Chart
               </button>
@@ -477,14 +489,14 @@ export default function CanvasSection({
           ) : (
             <div
               ref={canvasRef}
-              className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}${showGrid ? ' section-free-canvas--grid' : ''}`}
+              className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}${showGrid ? ' section-free-canvas--grid' : ''}${isPreviewMode ? ' section-free-canvas--preview' : ''}`}
               style={{
                 minHeight: sectionHeight,
                 ...(showGrid ? {
                   '--grid-size': `${gridSize}px`,
                 } : {}),
               }}
-              onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
+              onClick={(e) => { if (!isPreviewMode && e.target === e.currentTarget) onSelect?.(null) }}
             >
               {blocks.map((block) => (
                 (() => {
@@ -514,6 +526,7 @@ export default function CanvasSection({
                   canvasWidth={canvasWidth}
                   otherRects={otherRects}
                   snapValue={snapValue}
+                  isPreviewMode={isPreviewMode}
                 />
                   )
                 })()
@@ -524,7 +537,7 @@ export default function CanvasSection({
       )}
 
       {collapsed && (
-        <div className="section-collapsed-bar" onClick={() => setCollapsed(false)}>
+        <div className="section-collapsed-bar" onClick={() => !isPreviewMode && setCollapsed(false)}>
           <ChevronRight size={12} />
           <span>{blocks.length} hidden widget{blocks.length !== 1 ? 's' : ''} - click to expand</span>
         </div>

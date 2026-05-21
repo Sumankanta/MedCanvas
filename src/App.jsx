@@ -788,10 +788,11 @@ export default function App() {
           onClose={() => setLeftOpen(false)}
         />
 
-        <CanvasArea
+      <CanvasArea
           sections={sections}
           setSections={(s) => pushState(s)}
           data={data}
+          isPreviewMode={isPreviewMode}
           selectedId={selectedId}
           dashboardTitle={title}
           dashboardSubtitle={subtitle}

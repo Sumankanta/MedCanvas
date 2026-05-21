@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
+  ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts'
 import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical, Trash } from 'lucide-react'
 
@@ -27,6 +28,10 @@ const CFG = {
   'chart-stacked':  { title: 'Stacked Results',     subtitle: 'Positive vs normal',    color: '#8b5cf6' },
   'chart-line':     { title: 'Screening Trend',     subtitle: 'Week overview',         color: '#10b981' },
   'chart-area':     { title: 'Area Trend',           subtitle: 'Cumulative view',       color: '#06b6d4' },
+  'chart-combo':    { title: 'Combo Trend',          subtitle: 'Bars with line overlay', color: '#14b8a6' },
+  'chart-stackedarea': { title: 'Stacked Area',      subtitle: 'Layered trend view',    color: '#0ea5e9' },
+  'chart-sparkline': { title: 'Sparkline',           subtitle: 'Compact trend summary',  color: '#22c55e' },
+  'chart-radar':    { title: 'Radar View',           subtitle: 'Multi-metric profile',   color: '#a855f7' },
   'chart-pie':      { title: 'Screening Outcomes',  subtitle: 'Result distribution',   color: '#f59e0b' },
   'chart-donut':    { title: 'Test Type Split',      subtitle: 'By test category',      color: '#ec4899' },
   'chart-radialbar':{ title: 'Camp Progress',        subtitle: 'Screened per camp',     color: '#f97316' },
@@ -66,11 +71,17 @@ function seriesOptions(type) {
     case 'chart-bar':
     case 'chart-line':
     case 'chart-area':
+    case 'chart-combo':
+    case 'chart-stackedarea':
       return { x: ['day'], y: ['screened', 'positive', 'normal'], hasSecondary: true }
+    case 'chart-sparkline':
+      return { x: ['day'], y: ['screened'], hasSecondary: false }
     case 'chart-hbar':
       return { x: ['name'], y: ['value'], hasSecondary: false }
     case 'chart-stacked':
       return { x: ['day'], y: ['normal', 'positive', 'screened'], hasSecondary: true }
+    case 'chart-radar':
+      return { x: ['camp'], y: ['screened', 'positive'], hasSecondary: true }
     case 'chart-pie':
     case 'chart-donut':
       return { x: ['label'], y: ['value'], hasSecondary: false }
@@ -182,8 +193,10 @@ function initData(type, data) {
   const clone = (d) => JSON.parse(JSON.stringify(d))
   switch (type) {
     case 'chart-bar': case 'chart-stacked': case 'chart-line': case 'chart-area':
+    case 'chart-combo': case 'chart-stackedarea': case 'chart-sparkline':
       return clone(data.screeningByDayData)
     case 'chart-hbar':   return clone(data.testTypeData)
+    case 'chart-radar':  return clone(data.campLocationData)
     case 'chart-pie':    return clone(data.outcomeChartData)
     case 'chart-donut':  return clone(data.outcomeChartData)
     case 'chart-radialbar': return clone(data.campLocationData)
@@ -316,6 +329,56 @@ function renderChart(type, d, opts, blockId) {
       )
     }
 
+    case 'chart-combo':
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+            {grid}
+            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+            <YAxis tick={ax} axisLine={false} tickLine={false} />
+            <Tooltip {...TOOLTIP_PROPS} />
+            {legend}
+            <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={20} />
+            {yKey2 && (
+              <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={3} dot={opts.showDots ? { r: 3, fill: opts.series2Color } : false} />
+            )}
+            {extraYKeys.map((k, i) => (
+              <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stroke={extraYColors[i]} strokeWidth={2} dot={false} />
+            ))}
+          </ComposedChart>
+        </ResponsiveContainer>
+      )
+
+    case 'chart-stackedarea':
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+            {grid}
+            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+            <YAxis tick={ax} axisLine={false} tickLine={false} />
+            <Tooltip {...TOOLTIP_PROPS} />
+            {legend}
+            <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={0.28} strokeWidth={2} />
+            {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.22} strokeWidth={2} />}
+            {extraYKeys.map((k, i) => (
+              <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={0.18} strokeWidth={2} />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
+      )
+
+    case 'chart-sparkline':
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={d} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
+            <XAxis dataKey={xKey} hide />
+            <YAxis hide />
+            <Tooltip {...TOOLTIP_PROPS} />
+            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={3} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      )
+
     case 'chart-pie': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
       return (
@@ -381,6 +444,27 @@ function renderChart(type, d, opts, blockId) {
             />
             {legend}<Tooltip {...TOOLTIP_PROPS} />
           </RadialBarChart>
+        </ResponsiveContainer>
+      )
+    }
+
+    case 'chart-radar': {
+      const radarData = d.map((row) => ({
+        ...row,
+        screened: Number(row.screened ?? 0),
+        positive: Number(row.positive ?? 0),
+      }))
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={radarData}>
+            <PolarGrid stroke="rgba(99,179,237,0.12)" />
+            <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(8, opts.fontSize - 2), fill: '#64748b' }} />
+            <PolarRadiusAxis tick={false} axisLine={false} />
+            <Tooltip {...TOOLTIP_PROPS} />
+            {legend}
+            <Radar dataKey={yKey} stroke={opts.color} fill={opts.color} fillOpacity={0.22} />
+            {yKey2 && <Radar dataKey={yKey2} stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.18} />}
+          </RadarChart>
         </ResponsiveContainer>
       )
     }
@@ -499,7 +583,7 @@ function renderChart(type, d, opts, blockId) {
   }
 }
 
-export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart, liveWidth, liveHeight }) {
+export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart, liveWidth, liveHeight, isPreviewMode = false }) {
   const [hovered,   setHovered]   = useState(false)
   const [editing,   setEditing]   = useState(false)
   const [menuOpen,  setMenuOpen]  = useState(false)
@@ -562,14 +646,16 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={onSelect}
+      onClick={isPreviewMode ? undefined : onSelect}
     >
       <div className="card-accent" style={{ background: `linear-gradient(90deg,${props.color},${props.color}44)` }} />
       <div className="card-header" style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 14px 4px 14px', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={onDragStart}>
-            <GripVertical size={14} />
-          </div>
+          {!isPreviewMode && (
+            <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={onDragStart}>
+              <GripVertical size={14} />
+            </div>
+          )}
           <div>
             <div className="card-title-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span className="card-title" style={{ fontSize: props.fontSize, fontWeight: 600, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -580,11 +666,13 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
           </div>
         </div>
         <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-          <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
-            <MoreVertical size={13} />
-          </button>
+          {!isPreviewMode && (
+            <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
+              <MoreVertical size={13} />
+            </button>
+          )}
           
-          {menuOpen && (
+          {menuOpen && !isPreviewMode && (
             <>
               <div 
                 style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
@@ -625,7 +713,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
           ? renderStatBlock(block.type, data, props)
           : renderChart(block.type, localData, props, block.id)
         }
-        {editing && !isStatBlock && (
+        {editing && !isStatBlock && !isPreviewMode && (
           <DataEditor
             block={block}
             rows={localData}

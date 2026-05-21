@@ -8,7 +8,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Calendar, Grid3X3, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, Magnet, PenLine, ChevronDown } from 'lucide-react'
+import { Calendar, Grid3X3, Grid2X2, Plus, SlidersHorizontal, Table2, Monitor, Smartphone, Tablet, Undo, Redo, Minus, ZoomIn, Magnet, PenLine, ChevronDown, Lock } from 'lucide-react'
 import CanvasSection from './CanvasSection'
 
 // ── Sortable wrapper for a section ─────────────────────────────────────────
@@ -38,6 +38,7 @@ function SortableSection({ section, children }) {
 export default function CanvasArea({
   sections,
   data,
+  isPreviewMode = false,
   dashboardTitle, dashboardSubtitle,
   onUpdateDashboardTitle, onUpdateDashboardSubtitle,
   selectedId, onUpdateBlock, onSelect, onRemoveBlock, onDuplicateBlock,
@@ -53,7 +54,21 @@ export default function CanvasArea({
   const [editingSubtitle, setEditingSubtitle] = useState(false)
   const [showGrid,        setShowGrid]        = useState(true)
   const [snapToGrid,      setSnapToGrid]      = useState(true)
+  const [viewportMode,    setViewportMode]    = useState('desktop')
   const GRID_SIZE = 24 // px
+  const effectiveShowGrid = isPreviewMode ? false : showGrid
+  const effectiveSnapToGrid = isPreviewMode ? false : snapToGrid
+  const viewportWidths = {
+    desktop: 1280,
+    tablet: 920,
+    mobile: 390,
+  }
+  const viewportWidth = viewportWidths[viewportMode] || viewportWidths.desktop
+  const viewportLabels = {
+    desktop: 'Desktop',
+    tablet: 'Tablet',
+    mobile: 'Mobile',
+  }
 
   const snapValue = useCallback((val) => {
     if (!snapToGrid) return val
@@ -66,11 +81,13 @@ export default function CanvasArea({
   )
 
   function handleDragStart({ active }) {
+    if (isPreviewMode) return
     setActiveId(active.id)
     setActiveType(active.data.current?.type || (String(active.id).startsWith('section-') ? 'section' : 'block'))
   }
 
   function handleDragOver({ active, over }) {
+    if (isPreviewMode) return
     if (!over || activeType !== 'block') return
 
     const activeId = active.id
@@ -87,6 +104,11 @@ export default function CanvasArea({
   }
 
   function handleDragEnd({ active, over }) {
+    if (isPreviewMode) {
+      setActiveId(null)
+      setActiveType(null)
+      return
+    }
     const type = activeType
     setActiveId(null)
     setActiveType(null)
@@ -127,6 +149,7 @@ export default function CanvasArea({
 
   // Canvas-level drop (adds a new section + block)
   function handleCanvasDrop(e) {
+    if (isPreviewMode) return
     e.preventDefault()
     setIsDragOver(false)
     const type = e.dataTransfer.getData('blockType')
@@ -135,38 +158,67 @@ export default function CanvasArea({
 
   return (
     <main className="canvas-area">
-      <div className="canvas-toolbar">
+      <div className={`canvas-toolbar${isPreviewMode ? ' canvas-toolbar--preview' : ''}`}>
         <div className="canvas-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="toolbar-group">
-            <button className="tb-btn" onClick={onUndo} disabled={!canUndo} title="Undo" style={{ opacity: canUndo ? 1 : 0.35 }}>
+            <button className="tb-btn" onClick={onUndo} disabled={!canUndo || isPreviewMode} title="Undo" style={{ opacity: canUndo && !isPreviewMode ? 1 : 0.35 }}>
               <Undo size={14} />
             </button>
-            <button className="tb-btn" onClick={onRedo} disabled={!canRedo} title="Redo" style={{ opacity: canRedo ? 1 : 0.35 }}>
+            <button className="tb-btn" onClick={onRedo} disabled={!canRedo || isPreviewMode} title="Redo" style={{ opacity: canRedo && !isPreviewMode ? 1 : 0.35 }}>
               <Redo size={14} />
             </button>
           </div>
           <div className="toolbar-separator" style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
-          <div className="toolbar-group responsive-switcher">
-            <button className="tb-btn active" title="Desktop"><Monitor size={14} /></button>
-            <button className="tb-btn" title="Tablet"><Tablet size={14} /></button>
-            <button className="tb-btn" title="Mobile"><Smartphone size={14} /></button>
+          <div className="toolbar-group responsive-switcher" role="group" aria-label="Responsive viewport">
+            <button
+              className={`tb-btn${viewportMode === 'desktop' ? ' active' : ''}`}
+              title="Desktop"
+              aria-pressed={viewportMode === 'desktop'}
+              onClick={() => setViewportMode('desktop')}
+            >
+              <Monitor size={14} />
+            </button>
+            <button
+              className={`tb-btn${viewportMode === 'tablet' ? ' active' : ''}`}
+              title="Tablet"
+              aria-pressed={viewportMode === 'tablet'}
+              onClick={() => setViewportMode('tablet')}
+            >
+              <Tablet size={14} />
+            </button>
+            <button
+              className={`tb-btn${viewportMode === 'mobile' ? ' active' : ''}`}
+              title="Mobile"
+              aria-pressed={viewportMode === 'mobile'}
+              onClick={() => setViewportMode('mobile')}
+            >
+              <Smartphone size={14} />
+            </button>
           </div>
+          {isPreviewMode && (
+            <div className="preview-lock-badge">
+              <Lock size={12} />
+              <span>Read-only preview</span>
+            </div>
+          )}
         </div>
 
         <div className="canvas-toolbar-center" style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              className={`grid-toggle-btn ${showGrid ? 'active' : ''}`}
-              onClick={() => setShowGrid((v) => !v)}
-              title={showGrid ? 'Hide grid' : 'Show grid'}
+              className={`grid-toggle-btn ${effectiveShowGrid ? 'active' : ''}`}
+              onClick={() => !isPreviewMode && setShowGrid((v) => !v)}
+              title={effectiveShowGrid ? 'Hide grid' : 'Show grid'}
+              disabled={isPreviewMode}
             >
               <Grid3X3 size={13} />
               <span>Grid</span>
             </button>
             <button
-              className={`grid-toggle-btn ${snapToGrid ? 'active' : ''}`}
-              onClick={() => setSnapToGrid((v) => !v)}
-              title={snapToGrid ? 'Disable snap to grid' : 'Enable snap to grid'}
+              className={`grid-toggle-btn ${effectiveSnapToGrid ? 'active' : ''}`}
+              onClick={() => !isPreviewMode && setSnapToGrid((v) => !v)}
+              title={effectiveSnapToGrid ? 'Disable snap to grid' : 'Enable snap to grid'}
+              disabled={isPreviewMode}
             >
               <Magnet size={13} />
               <span>Snap</span>
@@ -194,26 +246,33 @@ export default function CanvasArea({
 
       {/* ── Viewport ── */}
       <div
-        className={`canvas-viewport${showGrid ? ' canvas-viewport--grid' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
-        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
-        onDrop={handleCanvasDrop}
-        onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
+        className={`canvas-viewport canvas-viewport--${viewportMode}${effectiveShowGrid ? ' canvas-viewport--grid' : ''}${isPreviewMode ? ' canvas-viewport--preview' : ''}`}
+        onDragOver={isPreviewMode ? undefined : (e) => { e.preventDefault(); setIsDragOver(true) }}
+        onDragLeave={isPreviewMode ? undefined : (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
+        onDrop={isPreviewMode ? undefined : handleCanvasDrop}
+        onClick={isPreviewMode ? undefined : (e) => { if (e.target === e.currentTarget) onSelect(null) }}
       >
-        <div className="canvas-surface" style={{ transform: `scale(${zoom / 100})` }}>
-          <div className="dashboard-header-block" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '0 8px' }}>
-            <div>
+        <div
+          className={`canvas-surface canvas-surface--${viewportMode}`}
+          style={{
+            transform: `scale(${zoom / 100})`,
+            width: `min(${viewportWidth}px, 100%)`,
+          }}
+          data-viewport={viewportLabels[viewportMode]}
+        >
+          <div className="dashboard-header-block dashboard-header-block--responsive">
+            <div className="dashboard-header-copy">
               {editingTitle ? (
                 <input
                   autoFocus
-                  style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, border: '1px solid #d0d5dd', padding: '2px 6px', borderRadius: '4px', width: '350px' }}
+                  className="dashboard-title-input"
                   value={dashboardTitle}
                   onChange={(e) => onUpdateDashboardTitle(e.target.value)}
                   onBlur={() => setEditingTitle(false)}
                   onKeyDown={(e) => e.key === 'Enter' && setEditingTitle(false)}
                 />
               ) : (
-                <h1 onClick={() => setEditingTitle(true)} style={{ fontSize: '18px', fontWeight: 600, color: '#101828', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <h1 onClick={() => setEditingTitle(true)} className="dashboard-title">
                   {dashboardTitle || 'Untitled Dashboard'} <PenLine size={14} style={{ color: '#98a2b3' }} />
                 </h1>
               )}
@@ -221,25 +280,27 @@ export default function CanvasArea({
               {editingSubtitle ? (
                 <input
                   autoFocus
-                  style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0', border: '1px solid #d0d5dd', padding: '2px 6px', borderRadius: '4px', width: '350px' }}
+                  className="dashboard-subtitle-input"
                   value={dashboardSubtitle}
                   onChange={(e) => onUpdateDashboardSubtitle(e.target.value)}
                   onBlur={() => setEditingSubtitle(false)}
                   onKeyDown={(e) => e.key === 'Enter' && setEditingSubtitle(false)}
                 />
               ) : (
-                <p onClick={() => setEditingSubtitle(true)} style={{ fontSize: '13px', color: '#667085', margin: '4px 0 0 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <p onClick={() => setEditingSubtitle(true)} className="dashboard-subtitle">
                   {dashboardSubtitle || 'Add a subtitle'} <PenLine size={12} style={{ color: '#98a2b3' }} />
                 </p>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="date-filter" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', border: '1px solid #d0d5dd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', color: '#344054', fontWeight: 500, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', cursor: 'pointer' }}><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
-              <button className="date-filter" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', border: '1px solid #d0d5dd', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', color: '#344054', fontWeight: 500, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', cursor: 'pointer' }}><SlidersHorizontal size={14} color="#667085" /> Filters</button>
+            <div className="dashboard-header-actions">
+              {viewportMode !== 'mobile' && (
+                <button className="date-filter dashboard-date-filter dashboard-date-filter--range"><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
+              )}
+              <button className="date-filter dashboard-date-filter dashboard-date-filter--filters"><SlidersHorizontal size={14} color="#667085" /> Filters</button>
             </div>
           </div>
 
-          <div className={`canvas-dropzone${isDragOver ? ' drag-over' : ''}`}>
+          <div className={`canvas-dropzone${isDragOver ? ' drag-over' : ''}${isPreviewMode ? ' canvas-dropzone--preview' : ''}`}>
 
             {/* ── Empty State ── */}
             {sections.length === 0 && (
@@ -263,94 +324,123 @@ export default function CanvasArea({
             {/* ── Sections ── */}
             {sections.length > 0 && (
               <>
-                {isDragOver && (
+                {!isPreviewMode && isDragOver && (
                   <div className="drop-hint-banner">
                     <Plus size={13} /> Drop widget here or click to add
                   </div>
                 )}
 
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  onDragCancel={() => { setActiveId(null); setActiveType(null); }}
-                >
-                  <SortableContext
-                    items={sections.map((s) => s.id)}
-                    strategy={verticalListSortingStrategy}
+                {isPreviewMode ? (
+                  <div className="sections-list sections-list--preview">
+                    {sections.map((section) => (
+                      <CanvasSection
+                        key={section.id}
+                        section={section}
+                        data={data}
+                        selectedId={null}
+                        onSelect={undefined}
+                        onUpdateBlock={onUpdateBlock}
+                        onRemoveBlock={onRemoveBlock}
+                        onDuplicateBlock={onDuplicateBlock}
+                        onUpdateSection={onUpdateSection}
+                        onRemoveSection={onRemoveSection}
+                        onReorderBlocksInSection={onReorderBlocksInSection}
+                        onAddBlockToSection={onAddBlockToSection}
+                        snapToGrid={false}
+                        showGrid={false}
+                        gridSize={GRID_SIZE}
+                        snapValue={snapValue}
+                        isPreviewMode
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={() => { setActiveId(null); setActiveType(null); }}
                   >
-                    <div className="sections-list">
-                      {sections.map((section) => (
-                        <SortableSection key={section.id} section={section}>
-                          {({ dragHandleProps, isDraggingSection }) => (
-                            <CanvasSection
+                    <SortableContext
+                      items={sections.map((s) => s.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="sections-list">
+                        {sections.map((section) => (
+                          <SortableSection key={section.id} section={section}>
+                            {({ dragHandleProps, isDraggingSection }) => (
+                              <CanvasSection
                               section={section}
                               data={data}
                               selectedId={selectedId}
-                              onSelect={onSelect}
-                              onUpdateBlock={onUpdateBlock}
-                              onRemoveBlock={onRemoveBlock}
-                              onDuplicateBlock={onDuplicateBlock}
-                              onUpdateSection={onUpdateSection}
-                              onRemoveSection={onRemoveSection}
-                              onReorderBlocksInSection={onReorderBlocksInSection}
-                              onAddBlockToSection={onAddBlockToSection}
-                              dragHandleProps={dragHandleProps}
-                              isDraggingSection={isDraggingSection}
-                              activeId={activeId}
-                              activeType={activeType}
-                              snapToGrid={snapToGrid}
-                              showGrid={showGrid}
-                              gridSize={GRID_SIZE}
-                              snapValue={snapValue}
-                            />
-                          )}
-                        </SortableSection>
-                      ))}
-                    </div>
-                  </SortableContext>
+                                onSelect={onSelect}
+                                onUpdateBlock={onUpdateBlock}
+                                onRemoveBlock={onRemoveBlock}
+                                onDuplicateBlock={onDuplicateBlock}
+                                onUpdateSection={onUpdateSection}
+                                onRemoveSection={onRemoveSection}
+                                onReorderBlocksInSection={onReorderBlocksInSection}
+                                onAddBlockToSection={onAddBlockToSection}
+                                dragHandleProps={dragHandleProps}
+                                isDraggingSection={isDraggingSection}
+                                activeId={activeId}
+                                activeType={activeType}
+                                snapToGrid={snapToGrid}
+                                showGrid={showGrid}
+                                gridSize={GRID_SIZE}
+                                snapValue={snapValue}
+                                isPreviewMode={false}
+                              />
+                            )}
+                          </SortableSection>
+                        ))}
+                      </div>
+                    </SortableContext>
 
-                  {/* Ghost for drag */}
-                  <DragOverlay dropAnimation={{ duration: 160, easing: 'cubic-bezier(0.18,0.67,0.6,1.22)' }}>
-                    {activeId && activeType === 'section' && (() => {
-                      const activeSection = sections.find(s => s.id === activeId)
-                      return activeSection ? (
-                        <div className="section-drag-ghost">
-                          <Table2 size={16} />
-                          Moving section: <strong>{activeSection.title || 'Section'}</strong>
-                          <span className="section-drag-ghost-count">
-                            {activeSection.blocks?.length || 0} widgets
-                          </span>
-                        </div>
-                      ) : null
-                    })()}
-                    {activeId && activeType === 'block' && (() => {
-                      const activeBlock = sections.flatMap(s => s.blocks).find(b => b.id === activeId)
-                      return activeBlock ? (
-                        <div style={{
-                          opacity: 0.88, pointerEvents: 'none', borderRadius: 13, overflow: 'hidden',
-                          height: Number(activeBlock.props?.height) || 380,
-                          width: 260, boxShadow: '0 8px 40px rgba(0,0,0,0.55)',
-                        }}>
-                          <CanvasBlock
-                            block={activeBlock} data={data} selected={false}
-                            onRemove={() => {}} onDuplicate={() => {}} onSelect={() => {}}
-                          />
-                        </div>
-                      ) : null
-                    })()}
-                  </DragOverlay>
-                </DndContext>
+                    {/* Ghost for drag */}
+                    <DragOverlay dropAnimation={{ duration: 160, easing: 'cubic-bezier(0.18,0.67,0.6,1.22)' }}>
+                      {activeId && activeType === 'section' && (() => {
+                        const activeSection = sections.find(s => s.id === activeId)
+                        return activeSection ? (
+                          <div className="section-drag-ghost">
+                            <Table2 size={16} />
+                            Moving section: <strong>{activeSection.title || 'Section'}</strong>
+                            <span className="section-drag-ghost-count">
+                              {activeSection.blocks?.length || 0} widgets
+                            </span>
+                          </div>
+                        ) : null
+                      })()}
+                      {activeId && activeType === 'block' && (() => {
+                        const activeBlock = sections.flatMap(s => s.blocks).find(b => b.id === activeId)
+                        return activeBlock ? (
+                          <div style={{
+                            opacity: 0.88, pointerEvents: 'none', borderRadius: 13, overflow: 'hidden',
+                            height: Number(activeBlock.props?.height) || 380,
+                            width: 260, boxShadow: '0 8px 40px rgba(0,0,0,0.55)',
+                          }}>
+                            <CanvasBlock
+                              block={activeBlock} data={data} selected={false}
+                              onRemove={() => {}} onDuplicate={() => {}} onSelect={() => {}}
+                            />
+                          </div>
+                        ) : null
+                      })()}
+                    </DragOverlay>
+                  </DndContext>
+                )}
 
                 {/* Add section footer */}
-                <button
-                  className="canvas-add-section-footer"
-                  onClick={() => onAddSection(null)}
-                >
-                  <Plus size={13} /> Drop widget here or click to add
-                </button>
+                {!isPreviewMode && (
+                  <button
+                    className="canvas-add-section-footer"
+                    onClick={() => onAddSection(null)}
+                  >
+                    <Plus size={13} /> Drop widget here or click to add
+                  </button>
+                )}
               </>
             )}
           </div>
