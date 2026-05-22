@@ -3905,6 +3905,22 @@ body {
   box-shadow: 0 0 0 2px rgba(29, 116, 216, 0.08);
 }
 
+.wp-range {
+  width: 100%;
+  accent-color: #1570ef;
+  margin-top: 2px;
+}
+
+.wp-range-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #667085;
+}
+
 .wp-input-sm {
   min-height: 28px;
   font-size: 11px;

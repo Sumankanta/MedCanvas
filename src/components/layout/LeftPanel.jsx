@@ -54,7 +54,7 @@ const DEFAULT_PROPS = {
   title: '', subtitle: '',
   color: '#06b6d4', colSpan: 1, height: 420,
   showLegend: true, showGrid: true, showDots: true, pieLabel: false,
-  fontSize: 11, radius: 15, opacity: 100,
+  fontSize: 11, chartScale: 100, radius: 15, opacity: 100,
   fontFamily: 'Plus Jakarta Sans', fontWeight: 'Regular (400)',
   xKey: '', yKey: '', yKey2: '', extraYKeys: [],
   extraYColors: [], extraYLabels: [],
@@ -108,6 +108,7 @@ export default function LeftPanel({
   const widgetType = BLOCK_NAMES[selectedBlock.type] || 'Widget'
   const widgetDesc = WIDGET_DESCRIPTIONS[selectedBlock.type] || ''
   const isStat = isStatType(selectedBlock.type)
+  const isChart = selectedBlock.type?.startsWith('chart-')
 
   const handleUpdate = (patch) => {
     onUpdateBlock(patch)
@@ -226,6 +227,26 @@ export default function LeftPanel({
             </div>
           </div>
         </div>
+
+        {isChart && (
+          <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
+            <div className="wp-label">Chart Size</div>
+            <input
+              type="range"
+              min="70"
+              max="150"
+              step="5"
+              className="wp-range"
+              value={props.chartScale || 100}
+              onChange={(e) => handleUpdate({ chartScale: Math.max(70, Math.min(150, parseInt(e.target.value, 10) || 100)) })}
+            />
+            <div className="wp-range-meta">
+              <span>Smaller</span>
+              <span>{props.chartScale || 100}%</span>
+              <span>Larger</span>
+            </div>
+          </div>
+        )}
 
         <div style={{ height: '8px' }}></div>
 

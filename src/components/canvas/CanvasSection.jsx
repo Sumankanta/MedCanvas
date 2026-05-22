@@ -111,12 +111,12 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
     const defaults = defaultSize(block.type)
     const savedW = Number(block.props?.width ?? defaults.w)
     const savedH = Number(block.props?.height ?? defaults.h)
-    const isChartLike = !block.type?.startsWith('stat-')
-    const span = columns === 1 || isChartLike || savedW > columnWidth * 1.25 ? columns : 1
+    const isWideWidget = block.type === 'table'
+    const span = columns === 1 || (isWideWidget && savedW > columnWidth * 1.05) || savedW > columnWidth * 1.35 ? columns : 1
     const slotWidth = span === columns ? usableWidth : columnWidth
     const scale = Math.max(0.72, Math.min(1.18, slotWidth / Math.max(savedW, defaults.w)))
     const minH = minHeightForType(block.type)
-    const maxH = block.type === 'table' ? 340 : isChartLike ? 420 : 180
+    const maxH = block.type === 'table' ? 340 : 420
     const h = Math.round(clamp(savedH * scale, minH, maxH))
 
     let col = 0

@@ -8,7 +8,7 @@ import RightPanel from './components/layout/RightPanel'
 import { useDashboardData } from './hooks/useDashboardData'
 
 // ── Counters ────────────────────────────────────────────────────────────────
-let blockCounter   = 0
+let blockCounter = 0
 let sectionCounter = 0
 const STORAGE_KEY = 'medical_dashboard_layout_v8'
 
@@ -19,7 +19,7 @@ function getResponsiveMode() {
   return 'desktop'
 }
 
-function nextBlockId()   { blockCounter   += 1; return `block-${blockCounter}`   }
+function nextBlockId() { blockCounter += 1; return `block-${blockCounter}` }
 function nextSectionId() { sectionCounter += 1; return `section-${sectionCounter}` }
 function resetSectionCounter() { sectionCounter = 0 }
 
@@ -50,6 +50,7 @@ const DEFAULT_BLOCK_PROPS = {
   showDots: true,
   pieLabel: false,
   fontSize: 11,
+  chartScale: 100,
   fontFamily: 'Plus Jakarta Sans',
   fontWeight: 'Regular (400)',
   xKey: '',
@@ -67,7 +68,7 @@ const DEFAULT_BLOCK_PROPS = {
 
 function makeBlock(type) {
   return {
-    id:    nextBlockId(),
+    id: nextBlockId(),
     type,
     props: { ...DEFAULT_BLOCK_PROPS },
   }
@@ -125,10 +126,10 @@ function findFreeSpot(existingBlocks, type) {
 function makeSection(title = '', blockType = null) {
   const firstBlock = blockType ? makeBlock(blockType) : null
   return {
-    id:         nextSectionId(),
-    title:      title || `Section ${sectionCounter}`,
-    cols:       2,
-    blocks:     firstBlock ? [firstBlock] : [],
+    id: nextSectionId(),
+    title: title || `Section ${sectionCounter}`,
+    cols: 2,
+    blocks: firstBlock ? [firstBlock] : [],
     colSpanMap: firstBlock ? { [firstBlock.id]: { col: 0, colSpan: 1 } } : {},
   }
 }
@@ -136,9 +137,9 @@ function makeSection(title = '', blockType = null) {
 function getDefaultDashboardState() {
   const defaultSections = []
   syncCountersFromSections(defaultSections)
-  return { 
-    sections: defaultSections, 
-    history: [JSON.parse(JSON.stringify(defaultSections))], 
+  return {
+    sections: defaultSections,
+    history: [JSON.parse(JSON.stringify(defaultSections))],
     index: 0,
     title: 'Medical Drive Monitoring Dashboard',
     subtitle: 'Real-time overview of screening drives and outcomes'
@@ -243,10 +244,10 @@ export default function App() {
 
   const [dashboardState, setDashboardState] = useState(loadDashboardState)
   const [selectedId, setSelectedId] = useState(null)
-  const [cols,       setCols]       = useState(2)
-  const [leftOpen,   setLeftOpen]   = useState(true)
-  const [rightOpen,  setRightOpen]  = useState(true)
-  const [zoom,       setZoom]       = useState(100)
+  const [cols, setCols] = useState(2)
+  const [leftOpen, setLeftOpen] = useState(true)
+  const [rightOpen, setRightOpen] = useState(true)
+  const [zoom, setZoom] = useState(100)
   const [isExporting, setIsExporting] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [browserMode, setBrowserMode] = useState(getResponsiveMode)
@@ -255,14 +256,6 @@ export default function App() {
 
   const { sections, history, index, title, subtitle } = dashboardState
   const responsiveMode = previewMode || browserMode
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ sections, title, subtitle }))
-    } catch {
-      // ignore storage failures
-    }
-  }, [sections, title, subtitle])
 
   useEffect(() => {
     const handleResize = () => {
@@ -295,6 +288,19 @@ export default function App() {
   const setDashboardSubtitle = useCallback((newSubtitle) => {
     setDashboardState(prev => ({ ...prev, subtitle: newSubtitle }))
   }, [])
+
+  const saveDraft = useCallback(() => {
+    try {
+      const { sections: currentSections, title: currentTitle, subtitle: currentSubtitle } = dashboardState
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        sections: currentSections,
+        title: currentTitle,
+        subtitle: currentSubtitle,
+      }))
+    } catch {
+      // ignore storage failures
+    }
+  }, [dashboardState])
 
   // ── History Helpers ────────────────────────────────────────────────────────
   const pushState = useCallback((newSections) => {
@@ -419,8 +425,8 @@ export default function App() {
       const newBlock = makeBlock(type)
       const nextSections = prev.sections.map((s) => {
         if (s.id !== sectionId) return s
-        const colSpanMap  = s.colSpanMap || {}
-        const blocks      = s.blocks || []
+        const colSpanMap = s.colSpanMap || {}
+        const blocks = s.blocks || []
         const autoPos = initialPos && typeof initialPos === 'object'
           ? {
             x: Number(initialPos.x ?? 16),
@@ -437,10 +443,10 @@ export default function App() {
         const newColSpanMap = { ...colSpanMap, [newBlock.id]: { col: 0, colSpan: 6 } }
         return { ...s, blocks: [...blocks, newBlock], colSpanMap: newColSpanMap }
       })
-      
+
       const truncated = prev.history.slice(0, prev.index + 1)
       const nextHistory = [...truncated, JSON.parse(JSON.stringify(nextSections))]
-      
+
       // Select the new block after state update
       setTimeout(() => setSelectedId(newBlock.id), 0)
 
@@ -481,13 +487,13 @@ export default function App() {
       const nextSections = prev.sections.map((s) => {
         if (sectionId && s.id !== sectionId) return s
         const blocks = s.blocks || []
-        const idx    = blocks.findIndex((b) => b.id === blockId)
+        const idx = blocks.findIndex((b) => b.id === blockId)
         if (idx === -1) return s
         const original = blocks[idx]
         const newId = nextBlockId()
         const clone = {
           ...original,
-          id:    newId,
+          id: newId,
           props: { ...DEFAULT_BLOCK_PROPS, ...original.props },
         }
         const newColSpanMap = { ...s.colSpanMap }
@@ -523,9 +529,9 @@ export default function App() {
 
         let newColSpanMap = { ...s.colSpanMap };
         if (patch.colSpan !== undefined) {
-          newColSpanMap[blockId] = { 
-            ...(newColSpanMap[blockId] || { col: 0 }), 
-            colSpan: patch.colSpan 
+          newColSpanMap[blockId] = {
+            ...(newColSpanMap[blockId] || { col: 0 }),
+            colSpan: patch.colSpan
           };
         }
 
@@ -591,7 +597,7 @@ export default function App() {
       // Add to target
       const nextTargetBlocks = [...targetSection.blocks];
       nextTargetBlocks.splice(newIndex, 0, block);
-      
+
       // Default to column 0 if moving to a new section, or keep same col if target has it
       const nextTargetColSpanMap = { ...targetSection.colSpanMap };
       nextTargetColSpanMap[blockId] = sourceSection.colSpanMap[blockId] || { col: 0, colSpan: 6 };
@@ -757,10 +763,10 @@ export default function App() {
   }, [undo, redo, selectedId, removeBlock])
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const selectedBlock       = selectedId ? findBlock(sections, selectedId) : null
-  const selectedSection     = selectedId ? findSectionForBlock(sections, selectedId) : null
+  const selectedBlock = selectedId ? findBlock(sections, selectedId) : null
+  const selectedSection = selectedId ? findSectionForBlock(sections, selectedId) : null
   const selectedSectionCols = selectedSection?.cols ?? cols
-  const totalBlocks         = allBlocks(sections).length
+  const totalBlocks = allBlocks(sections).length
 
   if (loading) {
     return (
@@ -788,7 +794,6 @@ export default function App() {
         blockCount={totalBlocks}
         lastUpdated={lastUpdated}
         isRefreshing={isRefreshing}
-        onRefresh={refetch}
         onClear={clearCanvas}
         onUndo={undo}
         onRedo={redo}
@@ -803,6 +808,7 @@ export default function App() {
         onToggleLeft={() => setLeftOpen((o) => !o)}
         onToggleRight={() => setRightOpen((o) => !o)}
         onApplyTemplate={applyTemplate}
+        onSaveDraft={saveDraft}
         onExport={exportDashboard}
         isExporting={isExporting}
       />
@@ -822,7 +828,7 @@ export default function App() {
           onClose={() => setLeftOpen(false)}
         />
 
-      <CanvasArea
+        <CanvasArea
           sections={sections}
           setSections={(s) => pushState(s)}
           data={data}

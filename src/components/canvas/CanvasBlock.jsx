@@ -13,43 +13,47 @@ const TOOLTIP_PROPS = {
 }
 
 const STAT_META = {
-  'stat-total':     { dataKey: 'totalScreened',  label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3  },
-  'stat-positive':  { dataKey: 'oralCancer',      label: 'Positive Cases',          icon: '🩺', defaultColor: '#ef4444', trend: +15.3  },
-  'stat-normal':    { dataKey: 'normal',           label: 'Normal / Clear',          icon: '✅', defaultColor: '#10b981', trend: +12 },
-  'stat-oral':      { dataKey: 'oralCancer',       label: 'Oral Cancer +ve',         icon: '🦷', defaultColor: '#f97316', trend: -2  },
-  'stat-anemia':    { dataKey: 'anemia',           label: 'Anemia +ve',              icon: '💉', defaultColor: '#ec4899', trend: +5  },
-  'stat-locations': { dataKey: 'locations',        label: 'Referred',                icon: '📍', defaultColor: '#8b5cf6', trend: +5.1   },
-  'stat-tests':     { dataKey: 'testsTotal',       label: 'Tests Conducted',         icon: '🔬', defaultColor: '#f59e0b', trend: +8.7 },
+  'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3 },
+  'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: '🩺', defaultColor: '#ef4444', trend: +15.3 },
+  'stat-normal': { dataKey: 'normal', label: 'Normal / Clear', icon: '✅', defaultColor: '#10b981', trend: +12 },
+  'stat-oral': { dataKey: 'oralCancer', label: 'Oral Cancer +ve', icon: '🦷', defaultColor: '#f97316', trend: -2 },
+  'stat-anemia': { dataKey: 'anemia', label: 'Anemia +ve', icon: '💉', defaultColor: '#ec4899', trend: +5 },
+  'stat-locations': { dataKey: 'locations', label: 'Referred', icon: '📍', defaultColor: '#8b5cf6', trend: +5.1 },
+  'stat-tests': { dataKey: 'testsTotal', label: 'Tests Conducted', icon: '🔬', defaultColor: '#f59e0b', trend: +8.7 },
 }
 
 const CFG = {
-  'chart-bar':      { title: 'Screenings by Day',   subtitle: 'Daily breakdown',       color: '#3b82f6' },
-  'chart-hbar':     { title: 'Tests Conducted by Type', subtitle: 'Horizontal breakdown', color: '#3b82f6' },
-  'chart-stacked':  { title: 'Stacked Results',     subtitle: 'Positive vs normal',    color: '#8b5cf6' },
-  'chart-line':     { title: 'Screening Trend',     subtitle: 'Week overview',         color: '#10b981' },
-  'chart-area':     { title: 'Area Trend',           subtitle: 'Cumulative view',       color: '#06b6d4' },
-  'chart-combo':    { title: 'Combo Trend',          subtitle: 'Bars with line overlay', color: '#14b8a6' },
-  'chart-stackedarea': { title: 'Stacked Area',      subtitle: 'Layered trend view',    color: '#0ea5e9' },
-  'chart-sparkline': { title: 'Sparkline',           subtitle: 'Compact trend summary',  color: '#22c55e' },
-  'chart-radar':    { title: 'Radar View',           subtitle: 'Multi-metric profile',   color: '#a855f7' },
-  'chart-pie':      { title: 'Screening Outcomes',  subtitle: 'Result distribution',   color: '#f59e0b' },
-  'chart-donut':    { title: 'Test Type Split',      subtitle: 'By test category',      color: '#ec4899' },
-  'chart-radialbar':{ title: 'Camp Progress',        subtitle: 'Screened per camp',     color: '#f97316' },
-  'chart-scatter':  { title: 'Age Distribution',    subtitle: 'By age group',          color: '#a78bfa' },
-  num:              { title: 'Key Statistics',       subtitle: 'Live drive numbers',    color: '#34d399' },
-  table:            { title: 'Patient Records',      subtitle: 'Screening data',        color: '#94a3b8' },
-  'stat-total':     { title: 'Total Patients',       subtitle: 'Screened this drive',   color: '#06b6d4' },
-  'stat-positive':  { title: 'Positive Cases',       subtitle: 'Requires follow-up',    color: '#ef4444' },
-  'stat-normal':    { title: 'Normal / Clear',       subtitle: 'No issues detected',    color: '#10b981' },
-  'stat-oral':      { title: 'Oral Cancer +ve',      subtitle: 'Oral cancer positives', color: '#f97316' },
-  'stat-anemia':    { title: 'Anemia +ve',           subtitle: 'Anemia positive cases', color: '#ec4899' },
-  'stat-locations': { title: 'Camp Locations',       subtitle: 'Active sites',          color: '#8b5cf6' },
-  'stat-tests':     { title: 'Tests Conducted',      subtitle: 'Total tests run',       color: '#f59e0b' },
-  'chart-hbar':     { title: 'Horizontal Bar',       subtitle: 'Ranked metrics',        color: '#60a5fa' },
+  'chart-bar': { title: 'Screenings by Day', subtitle: 'Daily breakdown', color: '#3b82f6' },
+  'chart-hbar': { title: 'Tests Conducted by Type', subtitle: 'Horizontal breakdown', color: '#3b82f6' },
+  'chart-stacked': { title: 'Stacked Results', subtitle: 'Positive vs normal', color: '#8b5cf6' },
+  'chart-line': { title: 'Screening Trend', subtitle: 'Week overview', color: '#10b981' },
+  'chart-area': { title: 'Area Trend', subtitle: 'Cumulative view', color: '#06b6d4' },
+  'chart-combo': { title: 'Combo Trend', subtitle: 'Bars with line overlay', color: '#14b8a6' },
+  'chart-stackedarea': { title: 'Stacked Area', subtitle: 'Layered trend view', color: '#0ea5e9' },
+  'chart-sparkline': { title: 'Sparkline', subtitle: 'Compact trend summary', color: '#22c55e' },
+  'chart-radar': { title: 'Radar View', subtitle: 'Multi-metric profile', color: '#a855f7' },
+  'chart-pie': { title: 'Screening Outcomes', subtitle: 'Result distribution', color: '#f59e0b' },
+  'chart-donut': { title: 'Test Type Split', subtitle: 'By test category', color: '#ec4899' },
+  'chart-radialbar': { title: 'Camp Progress', subtitle: 'Screened per camp', color: '#f97316' },
+  'chart-scatter': { title: 'Age Distribution', subtitle: 'By age group', color: '#a78bfa' },
+  num: { title: 'Key Statistics', subtitle: 'Live drive numbers', color: '#34d399' },
+  table: { title: 'Patient Records', subtitle: 'Screening data', color: '#94a3b8' },
+  'stat-total': { title: 'Total Patients', subtitle: 'Screened this drive', color: '#06b6d4' },
+  'stat-positive': { title: 'Positive Cases', subtitle: 'Requires follow-up', color: '#ef4444' },
+  'stat-normal': { title: 'Normal / Clear', subtitle: 'No issues detected', color: '#10b981' },
+  'stat-oral': { title: 'Oral Cancer +ve', subtitle: 'Oral cancer positives', color: '#f97316' },
+  'stat-anemia': { title: 'Anemia +ve', subtitle: 'Anemia positive cases', color: '#ec4899' },
+  'stat-locations': { title: 'Camp Locations', subtitle: 'Active sites', color: '#8b5cf6' },
+  'stat-tests': { title: 'Tests Conducted', subtitle: 'Total tests run', color: '#f59e0b' },
+  'chart-hbar': { title: 'Horizontal Bar', subtitle: 'Ranked metrics', color: '#60a5fa' },
 }
 
 function axisProps(fontSize) {
   return { fontSize: Math.max(8, fontSize - 1), fill: '#64748b' }
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n))
 }
 
 function toWeight(weight) {
@@ -192,26 +196,26 @@ function initData(type, data) {
     case 'chart-bar': case 'chart-stacked': case 'chart-line': case 'chart-area':
     case 'chart-combo': case 'chart-stackedarea': case 'chart-sparkline':
       return clone(data.screeningByDayData)
-    case 'chart-hbar':   return clone(data.testTypeData)
-    case 'chart-radar':  return clone(data.campLocationData)
-    case 'chart-pie':    return clone(data.outcomeChartData)
-    case 'chart-donut':  return clone(data.outcomeChartData)
+    case 'chart-hbar': return clone(data.testTypeData)
+    case 'chart-radar': return clone(data.campLocationData)
+    case 'chart-pie': return clone(data.outcomeChartData)
+    case 'chart-donut': return clone(data.outcomeChartData)
     case 'chart-radialbar': return clone(data.campLocationData)
-    case 'chart-scatter':   return clone(data.ageGroupData)
-    case 'num':   return clone(data.statVariables)
+    case 'chart-scatter': return clone(data.ageGroupData)
+    case 'num': return clone(data.statVariables)
     case 'table': return clone(data.patientTableData)
-    default:      return []
+    default: return []
   }
 }
 
 // ── renderChart now accepts extraYColors + extraYLabels ──────────────────────
 function renderChart(type, d, opts, blockId) {
   const mapping = seriesOptions(type)
-  const xKey  = pickOrDefault(mapping.x, opts.xKey)
-  const yKey  = pickOrDefault(mapping.y, opts.yKey)
+  const xKey = pickOrDefault(mapping.x, opts.xKey)
+  const yKey = pickOrDefault(mapping.y, opts.yKey)
   const yKey2 = mapping.hasSecondary ? pickOrDefault(mapping.y, opts.yKey2 || mapping.y[1]) : ''
 
-  const extraYKeys   = Array.isArray(opts.extraYKeys)   ? opts.extraYKeys.filter((k) => mapping.y.includes(k) && k !== yKey && k !== yKey2) : []
+  const extraYKeys = Array.isArray(opts.extraYKeys) ? opts.extraYKeys.filter((k) => mapping.y.includes(k) && k !== yKey && k !== yKey2) : []
   // Per-field colors: fall back to BASE_COLORS if not set
   const extraYColors = Array.isArray(opts.extraYColors) && opts.extraYColors.length === opts.extraYKeys?.length
     ? opts.extraYColors
@@ -221,10 +225,15 @@ function renderChart(type, d, opts, blockId) {
     ? opts.extraYLabels
     : extraYKeys.map((k) => k)
 
-  const ax     = axisProps(opts.fontSize)
-  const legend = opts.showLegend ? <Legend wrapperStyle={{ fontSize: Math.max(9, opts.fontSize - 1) }} /> : null
-  const grid   = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.06)" /> : null
-  const topRadius = [opts.barRadius, opts.barRadius, 0, 0]
+  const chartScale = clamp(Number(opts.chartScale ?? 100) / 100, 0.7, 1.5)
+  const chartFontSize = Math.max(8, Math.round(opts.fontSize * chartScale))
+  const chartStrokeWidth = Math.max(1, Math.round(Number(opts.strokeWidth ?? 2) * chartScale))
+  const chartBarSize = Math.max(8, Math.round(Number(opts.barSize ?? 12) * chartScale))
+  const chartRadius = Math.max(2, Math.round(Number(opts.barRadius ?? 4) * chartScale))
+  const ax = axisProps(chartFontSize)
+  const legend = opts.showLegend ? <Legend wrapperStyle={{ fontSize: Math.max(9, chartFontSize - 1) }} /> : null
+  const grid = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.06)" /> : null
+  const topRadius = [chartRadius, chartRadius, 0, 0]
 
   switch (type) {
     case 'chart-bar':
@@ -236,10 +245,10 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Bar dataKey={yKey}  fill={opts.color}        radius={topRadius} />
-            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} radius={topRadius} />}
+            <Bar dataKey={yKey} fill={opts.color} radius={topRadius} barSize={chartBarSize} />
+            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} radius={topRadius} barSize={chartBarSize} />}
             {extraYKeys.map((k, i) => (
-              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} radius={topRadius} />
+              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} radius={topRadius} barSize={chartBarSize} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -254,10 +263,10 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Bar dataKey={yKey}  fill={opts.color}        stackId="stack" radius={topRadius} />
-            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} stackId="stack" radius={topRadius} />}
+            <Bar dataKey={yKey} fill={opts.color} stackId="stack" radius={topRadius} barSize={chartBarSize} />
+            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} stackId="stack" radius={topRadius} barSize={chartBarSize} />}
             {extraYKeys.map((k, i) => (
-              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} stackId="stack" radius={topRadius} />
+              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} stackId="stack" radius={topRadius} barSize={chartBarSize} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -272,12 +281,12 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Line type="monotone" dataKey={yKey}  stroke={opts.color}        strokeWidth={opts.strokeWidth} dot={opts.showDots ? { r: 3, fill: opts.color }        : false} />
-            {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={opts.strokeWidth} dot={opts.showDots ? { r: 3, fill: opts.series2Color } : false} />}
+            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.color } : false} />
+            {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.series2Color } : false} />}
             {extraYKeys.map((k, i) => (
               <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]}
-                stroke={extraYColors[i]} strokeWidth={opts.strokeWidth}
-                dot={opts.showDots ? { r: 3, fill: extraYColors[i] } : false}
+                stroke={extraYColors[i]} strokeWidth={chartStrokeWidth}
+                dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: extraYColors[i] } : false}
               />
             ))}
           </LineChart>
@@ -293,16 +302,16 @@ function renderChart(type, d, opts, blockId) {
           <AreaChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={gradA} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={opts.color}        stopOpacity={fillOpacity} />
-                <stop offset="95%" stopColor={opts.color}        stopOpacity={0.02} />
+                <stop offset="5%" stopColor={opts.color} stopOpacity={fillOpacity} />
+                <stop offset="95%" stopColor={opts.color} stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id={gradB} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={opts.series2Color} stopOpacity={fillOpacity} />
+                <stop offset="5%" stopColor={opts.series2Color} stopOpacity={fillOpacity} />
                 <stop offset="95%" stopColor={opts.series2Color} stopOpacity={0.02} />
               </linearGradient>
               {extraYKeys.map((_, i) => (
                 <linearGradient key={i} id={`grad-extra-${blockId}-${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={extraYColors[i]} stopOpacity={fillOpacity} />
+                  <stop offset="5%" stopColor={extraYColors[i]} stopOpacity={fillOpacity} />
                   <stop offset="95%" stopColor={extraYColors[i]} stopOpacity={0.02} />
                 </linearGradient>
               ))}
@@ -312,13 +321,13 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Area type="monotone" dataKey={yKey}  stroke={opts.color}        fill={`url(#${gradA})`} strokeWidth={opts.strokeWidth} />
-            {yKey2 && <Area type="monotone" dataKey={yKey2} stroke={opts.series2Color} fill={`url(#${gradB})`} strokeWidth={opts.strokeWidth} />}
+            <Area type="monotone" dataKey={yKey} stroke={opts.color} fill={`url(#${gradA})`} strokeWidth={chartStrokeWidth} />
+            {yKey2 && <Area type="monotone" dataKey={yKey2} stroke={opts.series2Color} fill={`url(#${gradB})`} strokeWidth={chartStrokeWidth} />}
             {extraYKeys.map((k, i) => (
               <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]}
                 stroke={extraYColors[i]}
                 fill={`url(#grad-extra-${blockId}-${i})`}
-                strokeWidth={opts.strokeWidth}
+                strokeWidth={chartStrokeWidth}
               />
             ))}
           </AreaChart>
@@ -335,12 +344,12 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={20} />
+            <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={chartBarSize} />
             {yKey2 && (
-              <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={3} dot={opts.showDots ? { r: 3, fill: opts.series2Color } : false} />
+              <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.series2Color } : false} />
             )}
             {extraYKeys.map((k, i) => (
-              <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stroke={extraYColors[i]} strokeWidth={2} dot={false} />
+              <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stroke={extraYColors[i]} strokeWidth={chartStrokeWidth} dot={false} />
             ))}
           </ComposedChart>
         </ResponsiveContainer>
@@ -355,10 +364,10 @@ function renderChart(type, d, opts, blockId) {
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={0.28} strokeWidth={2} />
-            {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.22} strokeWidth={2} />}
+            <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={0.28} strokeWidth={chartStrokeWidth} />
+            {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.22} strokeWidth={chartStrokeWidth} />}
             {extraYKeys.map((k, i) => (
-              <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={0.18} strokeWidth={2} />
+              <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={0.18} strokeWidth={chartStrokeWidth} />
             ))}
           </AreaChart>
         </ResponsiveContainer>
@@ -371,19 +380,25 @@ function renderChart(type, d, opts, blockId) {
             <XAxis dataKey={xKey} hide />
             <YAxis hide />
             <Tooltip {...TOOLTIP_PROPS} />
-            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={3} dot={false} />
+            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       )
 
     case 'chart-pie': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
+      const pieInner = clamp(Math.round(Number(opts.innerRadius ?? 30) * chartScale), 0, 90)
+      const pieOuter = clamp(
+        Math.max(pieInner + 5, Math.round(Number(opts.outerRadius ?? 55) * chartScale)),
+        pieInner + 5,
+        90,
+      )
       return (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={d} cx="50%" cy="45%"
-              innerRadius={`${Math.max(0, opts.innerRadius)}%`}
-              outerRadius={`${Math.max(opts.innerRadius + 5, opts.outerRadius)}%`}
+              innerRadius={`${pieInner}%`}
+              outerRadius={`${pieOuter}%`}
               dataKey={yKey} nameKey={xKey} label={opts.pieLabel}
             >
               {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
@@ -397,13 +412,15 @@ function renderChart(type, d, opts, blockId) {
     case 'chart-donut': {
       const DONUT_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899']
       const total = d.reduce((s, item) => s + (item.value || 0), 0)
+      const donutInner = clamp(Math.round(52 * chartScale), 40, 78)
+      const donutOuter = clamp(Math.round(85 * chartScale), donutInner + 8, 90)
       return (
         <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 8 }}>
           <div style={{ flex: '0 0 55%', height: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={d} cx="50%" cy="50%"
-                  innerRadius="52%" outerRadius="85%"
+                  innerRadius={`${donutInner}%`} outerRadius={`${donutOuter}%`}
                   dataKey="value" nameKey="label" paddingAngle={2}
                 >
                   {d.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
@@ -429,15 +446,26 @@ function renderChart(type, d, opts, blockId) {
     case 'chart-radialbar': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
       const radial = d.map((r, i) => ({ ...r, name: r[xKey], fill: palette[i % palette.length] }))
+      const radialInner = clamp(Math.round(Number(opts.innerRadius ?? 30) * chartScale), 18, 78)
+      const radialOuter = clamp(
+        Math.max(radialInner + 15, Math.round(Number(opts.outerRadius ?? 55) * chartScale)),
+        radialInner + 15,
+        90,
+      )
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart cx="50%" cy="50%"
-            innerRadius={`${Math.max(5, opts.innerRadius)}%`}
-            outerRadius={`${Math.max(opts.innerRadius + 15, opts.outerRadius)}%`}
-            barSize={opts.barSize} data={radial} startAngle={180} endAngle={0}
+          <RadialBarChart
+            cx="50%"
+            cy="60%"
+            innerRadius={`${radialInner}%`}
+            outerRadius={`${radialOuter}%`}
+            barSize={Math.max(10, chartBarSize)}
+            data={radial}
+            startAngle={180}
+            endAngle={0}
           >
             <RadialBar minAngle={15} background clockWise dataKey={yKey}
-              label={{ position: 'insideStart', fill: '#64748b', fontSize: Math.max(8, opts.fontSize - 2) }}
+              label={{ position: 'insideStart', fill: '#334155', fontSize: Math.max(9, chartFontSize - 1) }}
             />
             {legend}<Tooltip {...TOOLTIP_PROPS} />
           </RadialBarChart>
@@ -455,7 +483,7 @@ function renderChart(type, d, opts, blockId) {
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={radarData}>
             <PolarGrid stroke="rgba(99,179,237,0.12)" />
-            <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(8, opts.fontSize - 2), fill: '#64748b' }} />
+            <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b' }} />
             <PolarRadiusAxis tick={false} axisLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
@@ -490,9 +518,9 @@ function renderChart(type, d, opts, blockId) {
           <BarChart data={d} layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 0 }}>
             {grid}
             <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
             <Tooltip {...TOOLTIP_PROPS} />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={chartBarSize}>
               {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
             </Bar>
           </BarChart>
@@ -556,9 +584,9 @@ function renderChart(type, d, opts, blockId) {
 }
 
 export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart, liveWidth, liveHeight, isPreviewMode = false }) {
-  const [hovered,   setHovered]   = useState(false)
-  const [editing,   setEditing]   = useState(false)
-  const [menuOpen,  setMenuOpen]  = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [localData, setLocalData] = useState(() => block.props?.data || initData(block.type, data))
 
   const isStatBlock = block.type.startsWith('stat-')
@@ -573,30 +601,31 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const scale = Math.sqrt(scaleX * scaleY)
 
   const props = useMemo(() => ({
-    title:        block.props?.title       || base.title,
-    subtitle:     block.props?.subtitle    ?? base.subtitle,
-    color:        block.props?.color       || base.color,
-    opacity:      Number(block.props?.opacity    ?? 100),
-    radius:       Number(block.props?.radius     ?? 15),
-    showLegend:   block.props?.showLegend  ?? true,
-    showGrid:     block.props?.showGrid    ?? true,
-    showDots:     block.props?.showDots    ?? true,
-    pieLabel:     block.props?.pieLabel    ?? false,
-    fontSize:     Math.round(Number(block.props?.fontSize ?? 11) * scale),
-    fontFamily:   block.props?.fontFamily  || 'Plus Jakarta Sans',
-    fontWeight:   toWeight(block.props?.fontWeight || 'Regular (400)'),
-    xKey:         block.props?.xKey        || '',
-    yKey:         block.props?.yKey        || '',
-    yKey2:        block.props?.yKey2       || '',
-    extraYKeys:   Array.isArray(block.props?.extraYKeys)   ? block.props.extraYKeys   : [],
+    title: block.props?.title || base.title,
+    subtitle: block.props?.subtitle ?? base.subtitle,
+    color: block.props?.color || base.color,
+    opacity: Number(block.props?.opacity ?? 100),
+    radius: Number(block.props?.radius ?? 15),
+    showLegend: block.props?.showLegend ?? true,
+    showGrid: block.props?.showGrid ?? true,
+    showDots: block.props?.showDots ?? true,
+    pieLabel: block.props?.pieLabel ?? false,
+    fontSize: Math.round(Number(block.props?.fontSize ?? 11) * scale),
+    chartScale: Number(block.props?.chartScale ?? 100),
+    fontFamily: block.props?.fontFamily || 'Plus Jakarta Sans',
+    fontWeight: toWeight(block.props?.fontWeight || 'Regular (400)'),
+    xKey: block.props?.xKey || '',
+    yKey: block.props?.yKey || '',
+    yKey2: block.props?.yKey2 || '',
+    extraYKeys: Array.isArray(block.props?.extraYKeys) ? block.props.extraYKeys : [],
     extraYColors: Array.isArray(block.props?.extraYColors) ? block.props.extraYColors : [],
     extraYLabels: Array.isArray(block.props?.extraYLabels) ? block.props.extraYLabels : [],
-    strokeWidth:  Number(block.props?.strokeWidth ?? 2),
-    barRadius:    Number(block.props?.barRadius   ?? 4),
-    innerRadius:  Number(block.props?.innerRadius ?? 30),
-    outerRadius:  Number(block.props?.outerRadius ?? 55),
-    barSize:      Number(block.props?.barSize     ?? 12),
-    areaOpacity:  Number(block.props?.areaOpacity ?? 30),
+    strokeWidth: Number(block.props?.strokeWidth ?? 2),
+    barRadius: Number(block.props?.barRadius ?? 4),
+    innerRadius: Number(block.props?.innerRadius ?? 30),
+    outerRadius: Number(block.props?.outerRadius ?? 55),
+    barSize: Number(block.props?.barSize ?? 12),
+    areaOpacity: Number(block.props?.areaOpacity ?? 30),
     series2Color: block.props?.series2Color || '#ef4444',
   }), [block.props, base.color, base.subtitle, base.title, scale])
 
@@ -604,15 +633,15 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     <div
       className="canvas-card"
       style={{
-        height:       '100%',
-        opacity:      props.opacity / 100,
+        height: '100%',
+        opacity: props.opacity / 100,
         borderRadius: props.radius,
-        fontFamily:   props.fontFamily,
-        overflow:     menuOpen ? 'visible' : 'hidden',
-        boxShadow:    selected
+        fontFamily: props.fontFamily,
+        overflow: menuOpen ? 'visible' : 'hidden',
+        boxShadow: selected
           ? `0 0 0 2px ${props.color}, var(--shadow-lg)`
           : hovered ? 'var(--shadow-lg)' : 'var(--shadow-md)',
-        borderColor:  selected
+        borderColor: selected
           ? props.color
           : hovered ? `${props.color}88` : `${props.color}44`,
       }}
@@ -643,15 +672,15 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
               <MoreVertical size={13} />
             </button>
           )}
-          
+
           {menuOpen && !isPreviewMode && (
             <>
-              <div 
-                style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
-                onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }} 
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }}
               />
               <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: '#fff', border: '1px solid #d0d5dd', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', zIndex: 500, minWidth: '140px', display: 'flex', flexDirection: 'column' }}>
-                <div 
+                <div
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#344054', borderBottom: '1px solid #f2f4f7', boxSizing: 'border-box' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
@@ -659,7 +688,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
                 >
                   <Pencil size={15} style={{ color: '#667085' }} /> Edit Data
                 </div>
-                <div 
+                <div
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#344054', borderBottom: '1px solid #f2f4f7', boxSizing: 'border-box' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
@@ -667,7 +696,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
                 >
                   <Copy size={15} style={{ color: '#667085' }} /> Duplicate
                 </div>
-                <div 
+                <div
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#d92d20', boxSizing: 'border-box' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#fef3f2'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
@@ -689,8 +718,8 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
           <DataEditor
             block={block}
             rows={localData}
-            onSave={(rows) => { 
-              setLocalData(rows); 
+            onSave={(rows) => {
+              setLocalData(rows);
               setEditing(false);
               onUpdateBlock?.(block.id, { data: rows });
             }}

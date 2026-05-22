@@ -20,9 +20,10 @@ import {
 export default function TopBar({
   dashboardTitle, onUpdateDashboardTitle,
   isPreviewMode, onSetPreviewMode,
-  onRefresh, onUndo, onRedo, canUndo, canRedo,
+  onUndo, onRedo, canUndo, canRedo,
   zoom, onZoom, leftOpen, rightOpen, onToggleLeft, onToggleRight,
   onApplyTemplate,
+  onSaveDraft,
   onExport,
   isExporting = false,
 }) {
@@ -87,7 +88,7 @@ export default function TopBar({
           <span>Properties</span>
         </button>
 
-        <button className="btn btn-ghost" onClick={onRefresh} title="Save draft">
+        <button className="btn btn-ghost" onClick={onSaveDraft} title="Save draft">
           <RefreshCw size={14} />
           <span>Save Draft</span>
         </button>
