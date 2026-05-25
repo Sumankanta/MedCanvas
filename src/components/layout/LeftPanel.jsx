@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronRight, Hash, Trash2 } from 'lucide-react'
 
 const CHART_COLORS = [
@@ -52,7 +52,7 @@ const WIDGET_DESCRIPTIONS = {
 
 const DEFAULT_PROPS = {
   title: '', subtitle: '',
-  color: '#06b6d4', colSpan: 1, height: 420,
+  color: '#06b6d4', colSpan: 1, width: 360, height: 420,
   showLegend: true, showGrid: true, showDots: true, pieLabel: false,
   fontSize: 11, chartScale: 100, radius: 15, opacity: 100,
   fontFamily: 'Plus Jakarta Sans', fontWeight: 'Regular (400)',
@@ -62,6 +62,21 @@ const DEFAULT_PROPS = {
   innerRadius: 30, outerRadius: 55, barSize: 12,
   areaOpacity: 30, series2Color: '#ef4444',
 }
+
+const FONT_FAMILIES = [
+  'Plus Jakarta Sans',
+  'Inter',
+  'System UI',
+  'Georgia',
+  'Roboto',
+]
+
+const FONT_WEIGHTS = [
+  'Regular (400)',
+  'Medium (500)',
+  'Semibold (600)',
+  'Bold (700)',
+]
 
 function isStatType(type) { return type?.startsWith('stat-') }
 
@@ -112,6 +127,12 @@ export default function LeftPanel({
 
   const handleUpdate = (patch) => {
     onUpdateBlock(patch)
+  }
+
+  const clampNumber = (value, min, max, fallback) => {
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed)) return fallback
+    return Math.max(min, Math.min(max, parsed))
   }
 
   return (
@@ -227,6 +248,147 @@ export default function LeftPanel({
             </div>
           </div>
         </div>
+
+        <Section title="Layout" defaultOpen>
+          <div className="wp-grid-2">
+            <div>
+              <div className="wp-label">Width</div>
+              <input
+                type="number"
+                className="wp-input"
+                value={props.width || 360}
+                onChange={(e) => handleUpdate({ width: clampNumber(e.target.value, 180, 1400, 360) })}
+              />
+            </div>
+            <div>
+              <div className="wp-label">Height</div>
+              <input
+                type="number"
+                className="wp-input"
+                value={props.height || 420}
+                onChange={(e) => handleUpdate({ height: clampNumber(e.target.value, 120, 1200, 420) })}
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div className="wp-label">Opacity</div>
+            <input
+              type="range"
+              min="20"
+              max="100"
+              step="5"
+              className="wp-range"
+              value={props.opacity || 100}
+              onChange={(e) => handleUpdate({ opacity: clampNumber(e.target.value, 20, 100, 100) })}
+            />
+            <div className="wp-range-meta">
+              <span>Transparent</span>
+              <span>{props.opacity || 100}%</span>
+              <span>Solid</span>
+            </div>
+          </div>
+        </Section>
+
+        <Section title="Typography" defaultOpen={false}>
+          <div className="wp-grid-2">
+            <div>
+              <div className="wp-label">Font Family</div>
+              <select
+                className="wp-input"
+                value={props.fontFamily || 'Plus Jakarta Sans'}
+                onChange={(e) => handleUpdate({ fontFamily: e.target.value })}
+              >
+                {FONT_FAMILIES.map((family) => (
+                  <option key={family} value={family}>{family}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="wp-label">Font Weight</div>
+              <select
+                className="wp-input"
+                value={props.fontWeight || 'Regular (400)'}
+                onChange={(e) => handleUpdate({ fontWeight: e.target.value })}
+              >
+                {FONT_WEIGHTS.map((weight) => (
+                  <option key={weight} value={weight}>{weight}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </Section>
+
+        {isChart && (
+          <Section title="Chart Styling" defaultOpen>
+            <div className="wp-grid-2">
+              <div>
+                <div className="wp-label">Stroke Width</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.strokeWidth || 2}
+                  onChange={(e) => handleUpdate({ strokeWidth: clampNumber(e.target.value, 1, 12, 2) })}
+                />
+              </div>
+              <div>
+                <div className="wp-label">Bar Size</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.barSize || 12}
+                  onChange={(e) => handleUpdate({ barSize: clampNumber(e.target.value, 6, 40, 12) })}
+                />
+              </div>
+            </div>
+
+            <div className="wp-grid-2" style={{ marginTop: 10 }}>
+              <div>
+                <div className="wp-label">Bar Radius</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.barRadius || 4}
+                  onChange={(e) => handleUpdate({ barRadius: clampNumber(e.target.value, 0, 20, 4) })}
+                />
+              </div>
+              <div>
+                <div className="wp-label">Area Opacity</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.areaOpacity || 30}
+                  onChange={(e) => handleUpdate({ areaOpacity: clampNumber(e.target.value, 0, 100, 30) })}
+                />
+              </div>
+            </div>
+
+            <div className="wp-grid-2" style={{ marginTop: 10 }}>
+              <div>
+                <div className="wp-label">Inner Radius</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.innerRadius || 30}
+                  onChange={(e) => handleUpdate({ innerRadius: clampNumber(e.target.value, 0, 90, 30) })}
+                />
+              </div>
+              <div>
+                <div className="wp-label">Outer Radius</div>
+                <input
+                  type="number"
+                  className="wp-input"
+                  value={props.outerRadius || 55}
+                  onChange={(e) => handleUpdate({ outerRadius: clampNumber(e.target.value, 10, 95, 55) })}
+                />
+              </div>
+            </div>
+
+            <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+              <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Pie Labels</span>
+              <div className={`prop-toggle${props.pieLabel ? ' on' : ''}`} onClick={() => handleUpdate({ pieLabel: !props.pieLabel })} />
+            </div>
+          </Section>
+        )}
 
         {isChart && (
           <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>

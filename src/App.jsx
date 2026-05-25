@@ -67,16 +67,22 @@ const DEFAULT_BLOCK_PROPS = {
 }
 
 function makeBlock(type) {
+  const size = defaultBlockSize(type)
   return {
     id: nextBlockId(),
     type,
-    props: { ...DEFAULT_BLOCK_PROPS },
+    props: {
+      ...DEFAULT_BLOCK_PROPS,
+      width: size.width,
+      height: size.height,
+    },
   }
 }
 
 function defaultBlockSize(type) {
-  if (type?.startsWith('stat-')) return { width: 300, height: 180 }
-  return { width: 360, height: 380 }
+  if (type?.startsWith('stat-')) return { width: 288, height: 160 }
+  if (type === 'table') return { width: 360, height: 300 }
+  return { width: 360, height: 300 }
 }
 
 function overlaps(a, b) {

@@ -590,6 +590,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const [localData, setLocalData] = useState(() => block.props?.data || initData(block.type, data))
 
   const isStatBlock = block.type.startsWith('stat-')
+  const cardVariant = isStatBlock ? 'stat' : block.type === 'table' ? 'table' : 'chart'
   const base = CFG[block.type] || { title: 'Widget', subtitle: '', color: '#64748b' }
 
   const defaultW = isStatBlock ? 312 : 360
@@ -631,7 +632,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
 
   return (
     <div
-      className="canvas-card"
+      className={`canvas-card canvas-card--${cardVariant}`}
       style={{
         height: '100%',
         opacity: props.opacity / 100,

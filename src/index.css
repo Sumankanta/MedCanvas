@@ -1242,6 +1242,30 @@ svg {
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
+.canvas-card--chart .card-header,
+.canvas-card--table .card-header {
+  height: 54px;
+  padding: 8px 12px 4px;
+}
+
+.canvas-card--chart .card-body,
+.canvas-card--table .card-body {
+  height: calc(100% - 54px);
+  min-height: 0;
+  padding: 4px 8px 8px;
+}
+
+.canvas-card--stat .card-header {
+  height: 54px;
+  padding: 8px 12px 4px;
+}
+
+.canvas-card--stat .card-body {
+  height: calc(100% - 54px);
+  min-height: 0;
+  padding: 6px 10px 8px;
+}
+
 .card-accent {
   height: 2px;
 }
@@ -1339,11 +1363,16 @@ body.is-exporting .block-drag-handle,
   height: calc(100% - 62px);
   padding: 8px 10px 10px;
   position: relative;
+  min-height: 0;
 }
 
 .card-body--stat {
   display: flex;
   align-items: stretch;
+}
+
+.card-body > * {
+  min-height: 0;
 }
 
 .stat-grid {

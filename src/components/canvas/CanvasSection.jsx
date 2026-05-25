@@ -10,16 +10,27 @@ function clamp(n, min, max) {
 }
 
 function defaultSize(type) {
-  if (type?.startsWith('stat-')) return { w: 312, h: 192 }
-  return { w: 360, h: 384 }
+  if (type?.startsWith('stat-')) return { w: 288, h: 160 }
+  if (type === 'table') return { w: 360, h: 300 }
+  return { w: 360, h: 300 }
 }
 
 function minWidthForType(type) {
-  return type?.startsWith('stat-') ? 120 : 192
+  if (type?.startsWith('stat-')) return 120
+  if (type === 'table') return 240
+  return 220
 }
 
 function minHeightForType(type) {
-  return type?.startsWith('stat-') ? 120 : 192
+  if (type?.startsWith('stat-')) return 120
+  if (type === 'table') return 220
+  return 220
+}
+
+function maxHeightForType(type) {
+  if (type?.startsWith('stat-')) return 180
+  if (type === 'table') return 340
+  return 320
 }
 
 function rectOverlaps(a, b) {
@@ -54,7 +65,7 @@ function packWithoutOverlap(items, canvasWidth) {
 
   for (const item of sorted) {
     const w = Math.max(minWidthForType(item.type), Math.min(item.w, maxW))
-    const h = Math.max(120, item.h)
+    const h = Math.max(minHeightForType(item.type), Math.min(item.h, maxHeightForType(item.type)))
     const maxX = Math.max(padding, canvasWidth - w - padding)
 
     let found = null
@@ -90,7 +101,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   const previewMinWidth = responsiveMode === 'mobile' ? 280 : 704
   const layoutWidth = Math.max(canvasWidth, previewMinWidth)
   const usableWidth = Math.max(240, layoutWidth - (padding * 2))
-  const columns = responsiveMode === 'mobile' || usableWidth < 560 ? 1 : 2
+  const columns = responsiveMode === 'mobile' || usableWidth < 840 ? 1 : 2
   const columnWidth = Math.floor((usableWidth - (gap * (columns - 1))) / columns)
   const heights = Array.from({ length: columns }, () => padding)
   const rects = {}
@@ -116,7 +127,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
     const slotWidth = span === columns ? usableWidth : columnWidth
     const scale = Math.max(0.72, Math.min(1.18, slotWidth / Math.max(savedW, defaults.w)))
     const minH = minHeightForType(block.type)
-    const maxH = block.type === 'table' ? 340 : 420
+    const maxH = maxHeightForType(block.type)
     const h = Math.round(clamp(savedH * scale, minH, maxH))
 
     let col = 0
