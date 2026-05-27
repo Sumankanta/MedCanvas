@@ -10,6 +10,8 @@ const CHART_COLORS = [
 const BLOCK_NAMES = {
   'kpi-card':       'KPI Card',
   'chart-bar':      'Bar Chart',
+  'chart-map':      'Map Chart',
+  'chart-heatmap':  'Heat Map',
   'chart-stacked':  'Stacked Bar',
   'chart-line':     'Line Chart',
   'chart-area':     'Area Chart',
@@ -50,6 +52,8 @@ const WIDGET_DESCRIPTIONS = {
   'stat-locations': 'Displays a key metric or KPI',
   'stat-tests':     'Displays a key metric or KPI',
   'chart-bar':      'Displays data as vertical bars',
+  'chart-map':      'Displays camp data in a geographic-style block view',
+  'chart-heatmap':  'Displays data intensity across recent days',
   'chart-line':     'Displays data as a line trend',
   'chart-combo':    'Displays bars with an overlay trend line',
   'chart-stackedarea': 'Displays layered area trends',

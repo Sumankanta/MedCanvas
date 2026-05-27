@@ -39,6 +39,8 @@ const CFG = {
   'kpi-card': { title: 'KPI Card', subtitle: 'Quick metric snapshot', color: '#3b82f6' },
   'chart-bar': { title: 'Screenings by Day', subtitle: 'Daily breakdown', color: '#3b82f6' },
   'chart-hbar': { title: 'Tests Conducted by Type', subtitle: 'Horizontal breakdown', color: '#3b82f6' },
+  'chart-map': { title: 'Map Chart', subtitle: 'Geographic overview', color: '#06b6d4' },
+  'chart-heatmap': { title: 'Heat Map', subtitle: 'Intensity by day', color: '#ef4444' },
   'chart-stacked': { title: 'Stacked Results', subtitle: 'Positive vs normal', color: '#8b5cf6' },
   'chart-line': { title: 'Screening Trend', subtitle: 'Week overview', color: '#10b981' },
   'chart-area': { title: 'Area Trend', subtitle: 'Cumulative view', color: '#06b6d4' },
@@ -219,6 +221,8 @@ function initData(type, data) {
     case 'chart-combo': case 'chart-stackedarea': case 'chart-sparkline':
       return clone(data.screeningByDayData)
     case 'chart-hbar': return clone(data.testTypeData)
+    case 'chart-map': return clone(data.campLocationData)
+    case 'chart-heatmap': return clone(data.screeningByDayData)
     case 'chart-radar': return clone(data.campLocationData)
     case 'chart-pie': return clone(data.outcomeChartData)
     case 'chart-donut': return clone(data.outcomeChartData)
@@ -291,6 +295,76 @@ function renderLayoutBlock(type, opts) {
   }
 }
 
+function renderGeoMapChart(d, opts) {
+  const max = Math.max(...d.map((item) => Number(item.screened || 0)), 1)
+  const mapRows = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10)]
+  return (
+    <div className="map-chart">
+      <div className="map-chart__canvas">
+        {mapRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="map-chart__row">
+            {row.map((item) => {
+              const strength = Number(item.screened || 0) / max
+              return (
+                <div
+                  key={item.camp}
+                  className="map-chart__tile"
+                  style={{
+                    background: `rgba(59, 130, 246, ${0.08 + strength * 0.45})`,
+                    borderColor: `rgba(59, 130, 246, ${0.12 + strength * 0.5})`,
+                  }}
+                >
+                  <span className="map-chart__camp">{item.camp}</span>
+                  <strong>{item.screened}</strong>
+                  <span>Positive {item.positive}</span>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="map-chart__legend">
+        <div className="map-chart__legend-item"><span /> Low</div>
+        <div className="map-chart__legend-item"><span /> Medium</div>
+        <div className="map-chart__legend-item"><span /> High</div>
+      </div>
+    </div>
+  )
+}
+
+function renderHeatMapChart(d, opts) {
+  const cells = d.slice(-12)
+  const max = Math.max(...cells.map((item) => Number(item.screened || 0)), 1)
+  return (
+    <div className="heatmap-chart">
+      <div className="heatmap-chart__grid">
+        {cells.map((item) => {
+          const strength = Number(item.screened || 0) / max
+          return (
+            <div
+              key={item.date || item.day}
+              className="heatmap-chart__cell"
+              title={`${item.day}: ${item.screened} screened`}
+              style={{
+                background: `rgba(239, 68, 68, ${0.08 + strength * 0.62})`,
+                borderColor: `rgba(239, 68, 68, ${0.12 + strength * 0.55})`,
+              }}
+            >
+              <span>{item.day}</span>
+              <strong>{item.screened}</strong>
+            </div>
+          )
+        })}
+      </div>
+      <div className="heatmap-chart__scale">
+        <span>Low</span>
+        <span>Mid</span>
+        <span>High</span>
+      </div>
+    </div>
+  )
+}
+
 function renderChart(type, d, opts, blockId) {
   if (!Array.isArray(d) || d.length === 0) {
     return (
@@ -301,6 +375,9 @@ function renderChart(type, d, opts, blockId) {
       </div>
     )
   }
+
+  if (type === 'chart-map') return renderGeoMapChart(d, opts)
+  if (type === 'chart-heatmap') return renderHeatMapChart(d, opts)
 
   const mapping = seriesOptions(type)
   const xKey = pickOrDefault(mapping.x, opts.xKey)

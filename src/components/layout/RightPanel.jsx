@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import {
   BarChart3,
+  Flame,
   Radar,
   Columns3,
   GripVertical,
   LineChart,
+  Map,
   PieChart,
   Search,
   Table2,
@@ -30,6 +32,8 @@ const GROUPS = [
     items: [
       { type: 'chart-bar',          name: 'Bar Chart',          Icon: BarChart3 },
       { type: 'chart-hbar',         name: 'Horizontal Bar',     Icon: BarChart3 },
+      { type: 'chart-map',          name: 'Map Chart',          Icon: Map },
+      { type: 'chart-heatmap',      name: 'Heat Map',           Icon: Flame },
       { type: 'chart-stacked',      name: 'Stacked Column',     Icon: Columns3 },
       { type: 'chart-line',         name: 'Line Chart',         Icon: LineChart },
       { type: 'chart-area',         name: 'Area Chart',         Icon: LineChart },

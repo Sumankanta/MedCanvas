@@ -3355,6 +3355,14 @@ body {
   margin: 0 8px !important;
   min-height: 592px !important;
   background-color: transparent !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.section-free-canvas::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .section-free-canvas--grid {
@@ -3611,6 +3619,14 @@ body {
 .canvas-viewport {
   padding: 20px 16px !important;
   overflow: auto !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.canvas-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .canvas-surface {
@@ -4073,6 +4089,111 @@ body {
   font-size: 12px;
   line-height: 1.5;
   color: #667085;
+}
+
+.map-chart,
+.heatmap-chart {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-chart__canvas {
+  flex: 1;
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.map-chart__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.map-chart__tile {
+  min-height: 86px;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #0f172a;
+}
+
+.map-chart__camp {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 700;
+}
+
+.map-chart__tile strong {
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.map-chart__tile span:last-child {
+  font-size: 11px;
+  color: #334155;
+}
+
+.map-chart__legend,
+.heatmap-chart__scale {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.map-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-chart__legend-item span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(59,130,246,0.18), rgba(59,130,246,0.7));
+}
+
+.heatmap-chart__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-content: center;
+}
+
+.heatmap-chart__cell {
+  min-height: 86px;
+  border-radius: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.14);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #111827;
+}
+
+.heatmap-chart__cell span {
+  font-size: 10px;
+  color: #374151;
+}
+
+.heatmap-chart__cell strong {
+  font-size: 18px;
+  line-height: 1.1;
 }
 
 .pt-wrap {
