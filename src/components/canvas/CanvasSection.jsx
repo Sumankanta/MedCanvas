@@ -53,7 +53,7 @@ function resolveNoOverlap(candidate, others) {
   return next
 }
 
-function packWithoutOverlap(items, canvasWidth) {
+function packWithoutOverlap(items, canvasWidth, { fromTop = false } = {}) {
   const padding = 24
   const gap = 24
   const step = 24
@@ -61,15 +61,13 @@ function packWithoutOverlap(items, canvasWidth) {
   const placed = []
   const out = []
 
-  const sorted = [...items].sort((a, b) => (a.y - b.y) || (a.x - b.x))
-
-  for (const item of sorted) {
+  for (const item of items) {
     const w = Math.max(minWidthForType(item.type), Math.min(item.w, maxW))
     const h = Math.max(minHeightForType(item.type), Math.min(item.h, maxHeightForType(item.type)))
     const maxX = Math.max(padding, canvasWidth - w - padding)
 
     let found = null
-    const startY = Math.max(padding, item.y)
+    const startY = fromTop ? padding : Math.max(padding, item.y)
     const endY = startY + 2600
     for (let y = startY; y <= endY && !found; y += step) {
       for (let x = padding; x <= maxX; x += step) {
@@ -106,19 +104,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   const heights = Array.from({ length: columns }, () => padding)
   const rects = {}
 
-  const sorted = [...blocks].sort((a, b) => {
-    const ad = defaultSize(a.type)
-    const bd = defaultSize(b.type)
-    const ay = Number(a.props?.y ?? 16)
-    const by = Number(b.props?.y ?? 16)
-    const ax = Number(a.props?.x ?? 16)
-    const bx = Number(b.props?.x ?? 16)
-    const aw = Number(a.props?.width ?? ad.w)
-    const bw = Number(b.props?.width ?? bd.w)
-    return (ay - by) || (ax - bx) || (bw - aw)
-  })
-
-  for (const block of sorted) {
+  for (const block of blocks) {
     const defaults = defaultSize(block.type)
     const savedW = Number(block.props?.width ?? defaults.w)
     const savedH = Number(block.props?.height ?? defaults.h)
@@ -154,7 +140,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   }
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, isPreviewMode = false }) {
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, isPreviewMode = false, filteredOut = false }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
@@ -328,8 +314,15 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   return (
     <>
       <div
-        className={`abs-widget${isResponsiveLayout ? ' abs-widget--responsive' : ''}${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}`}
-        style={{ left: x, top: y, width: w, height: h }}
+        className={`abs-widget${isResponsiveLayout ? ' abs-widget--responsive' : ''}${selected ? ' abs-widget--selected' : ''}${isHovered ? ' abs-widget--hovered' : ''}${isDragging ? ' abs-widget--dragging' : ''}${isResizing ? ' abs-widget--resizing' : ''}${filteredOut ? ' abs-widget--filtered' : ''}`}
+        style={{
+          left: x,
+          top: y,
+          width: w,
+          height: h,
+          opacity: filteredOut ? 0.28 : undefined,
+          pointerEvents: filteredOut ? 'none' : undefined,
+        }}
         onMouseDown={() => onSelect?.(block.id)}
         onClick={(e) => { e.stopPropagation(); onSelect?.(block.id) }}
         onMouseEnter={() => setIsHovered(true)}
@@ -375,6 +368,7 @@ export default function CanvasSection({
   onSelect, onUpdateBlock, onRemoveBlock, onDuplicateBlock,
   onUpdateSection, onRemoveSection,
   onAddBlockToSection,
+  widgetFilters = { chart: true, stat: true, table: true },
   dragHandleProps, isDraggingSection,
   showGrid, gridSize = 24, snapValue,
   responsiveMode = 'desktop',
@@ -386,9 +380,15 @@ export default function CanvasSection({
   const [isDragOver, setIsDragOver] = useState(false)
   const [canvasWidth, setCanvasWidth] = useState(0)
   const canvasRef = useRef(null)
-  const isPackingRef = useRef(false)
-
+  const previousResponsiveModeRef = useRef(responsiveMode)
+  const desktopReflowRef = useRef(false)
   const blocks = section.blocks || []
+  const getFilterKey = (type) => {
+    if (type === 'table') return 'table'
+    if (type?.startsWith('stat-') || type === 'num') return 'stat'
+    if (type?.startsWith('chart-')) return 'chart'
+    return 'chart'
+  }
   const responsiveLayout = useMemo(
     () => buildResponsiveLayout(blocks, canvasWidth, responsiveMode),
     [blocks, canvasWidth, responsiveMode],
@@ -407,6 +407,14 @@ export default function CanvasSection({
   }, [blocks, responsiveLayout])
 
   useEffect(() => {
+    const previousMode = previousResponsiveModeRef.current
+    if (previousMode !== 'desktop' && responsiveMode === 'desktop') {
+      desktopReflowRef.current = true
+    }
+    previousResponsiveModeRef.current = responsiveMode
+  }, [responsiveMode])
+
+  useEffect(() => {
     const node = canvasRef.current
     if (!node) return undefined
 
@@ -420,7 +428,8 @@ export default function CanvasSection({
 
   useEffect(() => {
     if (isPreviewMode || responsiveMode !== 'desktop') return
-    if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1 || isPackingRef.current) return
+    if (!desktopReflowRef.current) return
+    if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1) return
 
     const current = blocks.map((b) => {
       const d = defaultSize(b.type)
@@ -434,10 +443,10 @@ export default function CanvasSection({
       }
     })
 
-    const packed = packWithoutOverlap(current, canvasWidth)
+    const packed = packWithoutOverlap(current, canvasWidth, { fromTop: true })
     const changes = packed.filter((p) => {
       const c = current.find((x) => x.id === p.id)
-      return !c || c.x !== p.x || c.y !== p.y || c.w !== p.w
+      return !c || c.x !== p.x || c.y !== p.y || c.w !== p.w || c.h !== p.h
     })
     if (changes.length === 0) return
 
@@ -452,16 +461,13 @@ export default function CanvasSection({
           x: p.x,
           y: p.y,
           width: p.w,
+          height: p.h,
         },
       }
     })
 
-    isPackingRef.current = true
+    desktopReflowRef.current = false
     onUpdateSection(section.id, { blocks: nextBlocks }, { skipHistory: true })
-    const timer = window.setTimeout(() => {
-      isPackingRef.current = false
-    }, 0)
-    return () => window.clearTimeout(timer)
   }, [blocks, canvasWidth, onUpdateSection, responsiveMode, section.id, isPreviewMode])
 
   function handleSectionDrop(e) {
@@ -597,7 +603,7 @@ export default function CanvasSection({
                       }
                     })
                   return (
-                <BlockItem
+                  <BlockItem
                   key={block.id}
                   block={block}
                   data={data}
@@ -612,6 +618,7 @@ export default function CanvasSection({
                   snapValue={snapValue}
                   isPreviewMode={isPreviewMode}
                   displayRect={displayRect}
+                  filteredOut={!widgetFilters[getFilterKey(block.type)]}
                   responsiveMode={responsiveMode}
                 />
                   )

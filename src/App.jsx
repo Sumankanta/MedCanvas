@@ -267,7 +267,7 @@ export default function App() {
     const handleResize = () => {
       const nextMode = getResponsiveMode()
       setBrowserMode(nextMode)
-      if (nextMode === 'mobile') {
+      if (nextMode !== 'desktop') {
         setLeftOpen(false)
         setRightOpen(false)
       }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, KeyboardSensor, useSensor, useSensors,
@@ -35,6 +35,53 @@ function SortableSection({ section, children }) {
   )
 }
 
+function toDateInputValue(date) {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatShortDate(date) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(date))
+}
+
+function formatRangeLabel(startDate, endDate) {
+  return `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`
+}
+
+function getMonthBounds(date = new Date()) {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1)
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  return { start, end }
+}
+
+function getWeekBounds(date = new Date()) {
+  const current = new Date(date)
+  const day = current.getDay()
+  const start = new Date(current)
+  start.setDate(current.getDate() - day)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { start, end }
+}
+
+function getLastThirtyDays(date = new Date()) {
+  const end = new Date(date)
+  const start = new Date(date)
+  start.setDate(end.getDate() - 29)
+  return { start, end }
+}
+
+function getBlockGroup(type) {
+  if (type === 'table') return 'table'
+  if (type?.startsWith('stat-') || type === 'num') return 'stat'
+  if (type?.startsWith('chart-')) return 'chart'
+  return 'other'
+}
+
 export default function CanvasArea({
   sections,
   data,
@@ -55,6 +102,20 @@ export default function CanvasArea({
   const [editingSubtitle, setEditingSubtitle] = useState(false)
   const [showGrid,        setShowGrid]        = useState(true)
   const [snapToGrid,      setSnapToGrid]      = useState(true)
+  const [dateRangeKey, setDateRangeKey] = useState('this-month')
+  const [customDateRange, setCustomDateRange] = useState(() => {
+    const { start, end } = getMonthBounds()
+    return { start: toDateInputValue(start), end: toDateInputValue(end) }
+  })
+  const [dateMenuOpen, setDateMenuOpen] = useState(false)
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false)
+  const [widgetFilters, setWidgetFilters] = useState({
+    chart: true,
+    stat: true,
+    table: true,
+  })
+  const dateMenuRef = useRef(null)
+  const filterMenuRef = useRef(null)
   const GRID_SIZE = 24 // px
   const effectiveShowGrid = isPreviewMode ? false : showGrid
   const effectiveSnapToGrid = isPreviewMode ? false : snapToGrid
@@ -69,6 +130,24 @@ export default function CanvasArea({
     tablet: 'Tablet preview, 768 pixels',
     mobile: 'Mobile preview, 390 pixels',
   }
+  const dashboardDateLabel = useMemo(() => {
+    const today = new Date()
+    if (dateRangeKey === 'today') return `Today (${formatShortDate(today)})`
+    if (dateRangeKey === 'this-week') {
+      const { start, end } = getWeekBounds(today)
+      return `This Week (${formatRangeLabel(start, end)})`
+    }
+    if (dateRangeKey === 'last-30-days') {
+      const { start, end } = getLastThirtyDays(today)
+      return `Last 30 Days (${formatRangeLabel(start, end)})`
+    }
+    if (dateRangeKey === 'custom') {
+      return `${formatShortDate(customDateRange.start)} - ${formatShortDate(customDateRange.end)}`
+    }
+    const { start, end } = getMonthBounds(today)
+    return `This Month (${formatRangeLabel(start, end)})`
+  }, [customDateRange.end, customDateRange.start, dateRangeKey])
+  const activeWidgetFilterCount = Object.values(widgetFilters).filter(Boolean).length
 
   const snapValue = useCallback((val) => {
     if (!snapToGrid) return val
@@ -79,6 +158,29 @@ export default function CanvasArea({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor),
   )
+
+  useEffect(() => {
+    function onPointerDown(e) {
+      const dateNode = dateMenuRef.current
+      const filterNode = filterMenuRef.current
+      if (dateNode && !dateNode.contains(e.target)) setDateMenuOpen(false)
+      if (filterNode && !filterNode.contains(e.target)) setFilterMenuOpen(false)
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') {
+        setDateMenuOpen(false)
+        setFilterMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
 
   function handleDragStart({ active }) {
     if (isPreviewMode) return
@@ -154,6 +256,30 @@ export default function CanvasArea({
     setIsDragOver(false)
     const type = e.dataTransfer.getData('blockType')
     if (type) onAddSection(type)   // creates a section + puts the block inside
+  }
+
+  function applyDatePreset(key) {
+    setDateRangeKey(key)
+    setDateMenuOpen(false)
+    if (key === 'custom') return
+    const now = new Date()
+    if (key === 'this-month') {
+      const { start, end } = getMonthBounds(now)
+      setCustomDateRange({ start: toDateInputValue(start), end: toDateInputValue(end) })
+    } else if (key === 'today') {
+      const current = toDateInputValue(now)
+      setCustomDateRange({ start: current, end: current })
+    } else if (key === 'this-week') {
+      const { start, end } = getWeekBounds(now)
+      setCustomDateRange({ start: toDateInputValue(start), end: toDateInputValue(end) })
+    } else if (key === 'last-30-days') {
+      const { start, end } = getLastThirtyDays(now)
+      setCustomDateRange({ start: toDateInputValue(start), end: toDateInputValue(end) })
+    }
+  }
+
+  function toggleWidgetFilter(type) {
+    setWidgetFilters((prev) => ({ ...prev, [type]: !prev[type] }))
   }
 
   return (
@@ -307,8 +433,92 @@ export default function CanvasArea({
               )}
             </div>
             <div className="dashboard-header-actions">
-              <button className="date-filter dashboard-date-filter dashboard-date-filter--range"><Calendar size={14} color="#667085" /> This Month (May 1 - May 31, 2025) <ChevronDown size={14} color="#667085" /></button>
-              <button className="date-filter dashboard-date-filter dashboard-date-filter--filters"><SlidersHorizontal size={14} color="#667085" /> Filters</button>
+              <div className="dashboard-action-menu" ref={dateMenuRef}>
+                <button
+                  type="button"
+                  className="date-filter dashboard-date-filter dashboard-date-filter--range"
+                  onClick={() => {
+                    setFilterMenuOpen(false)
+                    setDateMenuOpen((v) => !v)
+                  }}
+                  aria-expanded={dateMenuOpen}
+                  aria-haspopup="dialog"
+                >
+                  <Calendar size={14} color="#667085" /> {dashboardDateLabel} <ChevronDown size={14} color="#667085" />
+                </button>
+
+                {dateMenuOpen && (
+                  <div className="dashboard-action-popover dashboard-action-popover--date" role="dialog" aria-label="Date range selector">
+                    <div className="dashboard-action-popover-title">Date range</div>
+                    <button type="button" className={`dashboard-action-option${dateRangeKey === 'today' ? ' active' : ''}`} onClick={() => applyDatePreset('today')}>Today</button>
+                    <button type="button" className={`dashboard-action-option${dateRangeKey === 'this-week' ? ' active' : ''}`} onClick={() => applyDatePreset('this-week')}>This Week</button>
+                    <button type="button" className={`dashboard-action-option${dateRangeKey === 'this-month' ? ' active' : ''}`} onClick={() => applyDatePreset('this-month')}>This Month</button>
+                    <button type="button" className={`dashboard-action-option${dateRangeKey === 'last-30-days' ? ' active' : ''}`} onClick={() => applyDatePreset('last-30-days')}>Last 30 Days</button>
+                    <button type="button" className={`dashboard-action-option${dateRangeKey === 'custom' ? ' active' : ''}`} onClick={() => { setDateRangeKey('custom'); setDateMenuOpen(true) }}>Custom Range</button>
+                    <div className="dashboard-action-custom-range">
+                      <label>
+                        <span>Start</span>
+                        <input
+                          type="date"
+                          value={customDateRange.start}
+                          onChange={(e) => {
+                            setDateRangeKey('custom')
+                            setCustomDateRange((prev) => ({ ...prev, start: e.target.value }))
+                          }}
+                        />
+                      </label>
+                      <label>
+                        <span>End</span>
+                        <input
+                          type="date"
+                          value={customDateRange.end}
+                          onChange={(e) => {
+                            setDateRangeKey('custom')
+                            setCustomDateRange((prev) => ({ ...prev, end: e.target.value }))
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="dashboard-action-menu" ref={filterMenuRef}>
+                <button
+                  type="button"
+                  className="date-filter dashboard-date-filter dashboard-date-filter--filters"
+                  onClick={() => {
+                    setDateMenuOpen(false)
+                    setFilterMenuOpen((v) => !v)
+                  }}
+                  aria-expanded={filterMenuOpen}
+                  aria-haspopup="dialog"
+                >
+                  <SlidersHorizontal size={14} color="#667085" /> Filters {activeWidgetFilterCount < 3 ? `(${activeWidgetFilterCount}/3)` : ''}
+                </button>
+
+                {filterMenuOpen && (
+                  <div className="dashboard-action-popover dashboard-action-popover--filters" role="dialog" aria-label="Dashboard filters">
+                    <div className="dashboard-action-popover-title">Filter widget types</div>
+                    <button type="button" className={`dashboard-action-option dashboard-action-option--toggle${widgetFilters.chart ? ' active' : ''}`} onClick={() => toggleWidgetFilter('chart')}>
+                      Charts
+                    </button>
+                    <button type="button" className={`dashboard-action-option dashboard-action-option--toggle${widgetFilters.stat ? ' active' : ''}`} onClick={() => toggleWidgetFilter('stat')}>
+                      Stats
+                    </button>
+                    <button type="button" className={`dashboard-action-option dashboard-action-option--toggle${widgetFilters.table ? ' active' : ''}`} onClick={() => toggleWidgetFilter('table')}>
+                      Tables
+                    </button>
+                    <button
+                      type="button"
+                      className="dashboard-action-option dashboard-action-option--reset"
+                      onClick={() => setWidgetFilters({ chart: true, stat: true, table: true })}
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -358,6 +568,7 @@ export default function CanvasArea({
                         onRemoveSection={onRemoveSection}
                         onReorderBlocksInSection={onReorderBlocksInSection}
                         onAddBlockToSection={onAddBlockToSection}
+                        widgetFilters={widgetFilters}
                         snapToGrid={false}
                         showGrid={false}
                         gridSize={GRID_SIZE}
@@ -396,6 +607,7 @@ export default function CanvasArea({
                                 onRemoveSection={onRemoveSection}
                                 onReorderBlocksInSection={onReorderBlocksInSection}
                                 onAddBlockToSection={onAddBlockToSection}
+                                widgetFilters={widgetFilters}
                                 dragHandleProps={dragHandleProps}
                                 isDraggingSection={isDraggingSection}
                                 activeId={activeId}

@@ -45,40 +45,40 @@ export default function TopBar({
           <span className="brand-name">PHC Platform</span>
           <span className="brand-subtitle">Medical Drive</span>
         </div>
-        <span className="breadcrumb">Dashboard Builder</span>
-        <span className="breadcrumb-sep">&gt;</span>
-        {isEditingTitle ? (
-          <input
-            autoFocus
-            className="breadcrumb current"
-            style={{ border: '1px solid #d0d5dd', background: 'transparent', padding: '2px 6px', borderRadius: '4px', width: '250px', outline: 'none' }}
-            value={dashboardTitle}
-            onChange={(e) => onUpdateDashboardTitle(e.target.value)}
-            onBlur={() => setIsEditingTitle(false)}
-            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-          />
-        ) : (
-          <>
-            <span className="breadcrumb current" onClick={() => setIsEditingTitle(true)} style={{ cursor: 'pointer' }}>
-              {dashboardTitle || 'Untitled Dashboard'}
-            </span>
-            <button className="icon-btn" title="Rename dashboard" onClick={() => setIsEditingTitle(true)}>
-              <PenLine size={13} />
-            </button>
-          </>
-        )}
-        <span className="draft-badge">Draft</span>
+        <div className="topbar-title-wrap">
+          <span className="breadcrumb">Dashboard Builder</span>
+          <span className="breadcrumb-sep">&gt;</span>
+          {isEditingTitle ? (
+            <input
+              autoFocus
+              className="breadcrumb current"
+              style={{ border: '1px solid #d0d5dd', background: 'transparent', padding: '2px 6px', borderRadius: '4px', width: '250px', outline: 'none' }}
+              value={dashboardTitle}
+              onChange={(e) => onUpdateDashboardTitle(e.target.value)}
+              onBlur={() => setIsEditingTitle(false)}
+              onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+            />
+          ) : (
+            <>
+              <span className="breadcrumb current" onClick={() => setIsEditingTitle(true)} style={{ cursor: 'pointer' }}>
+                {dashboardTitle || 'Untitled Dashboard'}
+              </span>
+              <button className="icon-btn" title="Rename dashboard" onClick={() => setIsEditingTitle(true)}>
+                <PenLine size={13} />
+              </button>
+            </>
+          )}
+          <span className="draft-badge">Draft</span>
+        </div>
       </div>
 
-      <div className="topbar-center">
+      <div className="topbar-center topbar-center--main">
         <button className={`mode-btn ${!isPreviewMode ? 'active' : ''}`} onClick={() => onSetPreviewMode(false)}>Design</button>
         <button className={`mode-btn ${isPreviewMode ? 'active' : ''}`} onClick={() => onSetPreviewMode(true)}>Preview</button>
         <button className="mode-btn"><Eye size={13} /> Settings</button>
       </div>
 
       <div className="topbar-right">
-
-
         <button className={`panel-toggle-btn ${leftOpen ? 'active' : ''}`} onClick={onToggleLeft} title={leftOpen ? 'Hide widgets panel' : 'Show widgets panel'}>
           <PanelLeft size={14} />
           <span>Widgets</span>
@@ -92,7 +92,6 @@ export default function TopBar({
           <RefreshCw size={14} />
           <span>Save Draft</span>
         </button>
-
 
         <div className="template-pop-wrap">
           <button className="btn btn-cyan" onClick={() => setPublishOpen((v) => !v)} disabled={isExporting}>

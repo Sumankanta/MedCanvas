@@ -12,6 +12,18 @@ const TOOLTIP_PROPS = {
   itemStyle: { color: '#94a3b8' },
 }
 
+function chartDot(color, chartScale) {
+  const size = Math.max(4, Math.round(4.5 * chartScale))
+  return {
+    r: size,
+    fill: color,
+    stroke: '#ffffff',
+    strokeWidth: 1.75,
+    fillOpacity: 1,
+    opacity: 1,
+  }
+}
+
 const STAT_META = {
   'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3 },
   'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: '🩺', defaultColor: '#ef4444', trend: +15.3 },
@@ -231,8 +243,26 @@ function renderChart(type, d, opts, blockId) {
   const chartBarSize = Math.max(8, Math.round(Number(opts.barSize ?? 12) * chartScale))
   const chartRadius = Math.max(2, Math.round(Number(opts.barRadius ?? 4) * chartScale))
   const ax = axisProps(chartFontSize)
-  const legend = opts.showLegend ? <Legend wrapperStyle={{ fontSize: Math.max(9, chartFontSize - 1) }} /> : null
-  const grid = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.06)" /> : null
+  const legend = opts.showLegend ? (
+    <Legend
+      layout="horizontal"
+      verticalAlign="bottom"
+      align="center"
+      iconType="circle"
+      iconSize={9}
+      height={34}
+      wrapperStyle={{
+        bottom: 0,
+        left: 0,
+        right: 0,
+        fontSize: Math.max(9, chartFontSize - 1),
+        color: '#475467',
+        textAlign: 'center',
+        paddingBottom: 2,
+      }}
+    />
+  ) : null
+  const grid = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.18)" strokeWidth={1} /> : null
   const topRadius = [chartRadius, chartRadius, 0, 0]
 
   switch (type) {
@@ -275,18 +305,19 @@ function renderChart(type, d, opts, blockId) {
     case 'chart-line':
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <LineChart data={d} margin={{ top: 10, right: 14, left: 0, bottom: 24 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
             {legend}
-            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.color } : false} />
-            {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.series2Color } : false} />}
+            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
+            {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />}
             {extraYKeys.map((k, i) => (
               <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]}
                 stroke={extraYColors[i]} strokeWidth={chartStrokeWidth}
-                dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: extraYColors[i] } : false}
+                dot={opts.showDots ? chartDot(extraYColors[i], chartScale) : false}
+                activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false}
               />
             ))}
           </LineChart>
@@ -346,7 +377,7 @@ function renderChart(type, d, opts, blockId) {
             {legend}
             <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={chartBarSize} />
             {yKey2 && (
-              <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? { r: Math.max(2, Math.round(3 * chartScale)), fill: opts.series2Color } : false} />
+              <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
             )}
             {extraYKeys.map((k, i) => (
               <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stroke={extraYColors[i]} strokeWidth={chartStrokeWidth} dot={false} />
