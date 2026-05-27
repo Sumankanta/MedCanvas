@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
@@ -25,6 +25,7 @@ function chartDot(color, chartScale) {
 }
 
 const STAT_META = {
+  'kpi-card': { dataKey: 'totalScreened', label: 'KPI Card', icon: 'KPI', defaultColor: '#3b82f6', trend: +12.3 },
   'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3 },
   'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: '🩺', defaultColor: '#ef4444', trend: +15.3 },
   'stat-normal': { dataKey: 'normal', label: 'Normal / Clear', icon: '✅', defaultColor: '#10b981', trend: +12 },
@@ -35,6 +36,7 @@ const STAT_META = {
 }
 
 const CFG = {
+  'kpi-card': { title: 'KPI Card', subtitle: 'Quick metric snapshot', color: '#3b82f6' },
   'chart-bar': { title: 'Screenings by Day', subtitle: 'Daily breakdown', color: '#3b82f6' },
   'chart-hbar': { title: 'Tests Conducted by Type', subtitle: 'Horizontal breakdown', color: '#3b82f6' },
   'chart-stacked': { title: 'Stacked Results', subtitle: 'Positive vs normal', color: '#8b5cf6' },
@@ -50,6 +52,14 @@ const CFG = {
   'chart-scatter': { title: 'Age Distribution', subtitle: 'By age group', color: '#a78bfa' },
   num: { title: 'Key Statistics', subtitle: 'Live drive numbers', color: '#34d399' },
   table: { title: 'Patient Records', subtitle: 'Screening data', color: '#94a3b8' },
+  'advanced-table': { title: 'Advanced Table', subtitle: 'Richer table view', color: '#94a3b8' },
+  'pivot-table': { title: 'Pivot Table', subtitle: 'Grouped summary', color: '#94a3b8' },
+  'layout-row': { title: 'Row', subtitle: 'Horizontal layout', color: '#64748b' },
+  'layout-column': { title: 'Column', subtitle: 'Vertical layout', color: '#64748b' },
+  'layout-text': { title: 'Text / Title', subtitle: 'Text block', color: '#64748b' },
+  'layout-image': { title: 'Image', subtitle: 'Image placeholder', color: '#64748b' },
+  'layout-divider': { title: 'Divider', subtitle: 'Section separator', color: '#64748b' },
+  'layout-spacer': { title: 'Spacer', subtitle: 'Blank spacing block', color: '#64748b' },
   'stat-total': { title: 'Total Patients', subtitle: 'Screened this drive', color: '#06b6d4' },
   'stat-positive': { title: 'Positive Cases', subtitle: 'Requires follow-up', color: '#ef4444' },
   'stat-normal': { title: 'Normal / Clear', subtitle: 'No issues detected', color: '#10b981' },
@@ -110,7 +120,7 @@ function seriesOptions(type) {
 }
 
 function renderStatBlock(type, data, props) {
-  const meta = STAT_META[type]
+  const meta = STAT_META[type] || STAT_META['stat-total']
   if (!meta) return null
   const varEntry = data?.statVariables?.find((v) => v.key === meta.dataKey)
   const value = varEntry?.value ?? 0
@@ -215,13 +225,83 @@ function initData(type, data) {
     case 'chart-radialbar': return clone(data.campLocationData)
     case 'chart-scatter': return clone(data.ageGroupData)
     case 'num': return clone(data.statVariables)
+    case 'kpi-card': return clone(data.statVariables)
     case 'table': return clone(data.patientTableData)
+    case 'advanced-table': return clone(data.patientTableData)
+    case 'pivot-table': return clone(data.patientTableData)
+    case 'layout-text':
+    case 'layout-image':
+    case 'layout-divider':
+    case 'layout-spacer':
+    case 'layout-row':
+    case 'layout-column':
+      return []
     default: return []
   }
 }
 
 // ── renderChart now accepts extraYColors + extraYLabels ──────────────────────
+function renderLayoutBlock(type, opts) {
+  switch (type) {
+    case 'layout-text':
+      return (
+        <div className="layout-widget layout-widget--text">
+          <div className="layout-widget__eyebrow">Text block</div>
+          <div className="layout-widget__heading">{opts.title || 'Text / Title'}</div>
+          <div className="layout-widget__copy">{opts.text || 'Use this space for headings, notes, and short context.'}</div>
+        </div>
+      )
+
+    case 'layout-image':
+      return (
+        <div className="layout-widget layout-widget--image">
+          <div className="layout-image-placeholder" aria-hidden="true">IMG</div>
+          <div className="layout-widget__heading">{opts.title || 'Image placeholder'}</div>
+          <div className="layout-widget__copy">{opts.imageAlt || 'Drop an image or keep this as a visual placeholder.'}</div>
+        </div>
+      )
+
+    case 'layout-divider':
+      return (
+        <div className="layout-widget layout-widget--divider">
+          <div className="layout-divider-line" />
+          {(opts.dividerLabel || opts.title) && <div className="layout-divider-label">{opts.dividerLabel || opts.title}</div>}
+        </div>
+      )
+
+    case 'layout-spacer':
+      return (
+        <div className="layout-widget layout-widget--spacer">
+          <div className="layout-spacer-box">Spacer</div>
+        </div>
+      )
+
+    case 'layout-row':
+    case 'layout-column':
+      return (
+        <div className={`layout-widget layout-widget--structure layout-widget--${type.endsWith('row') ? 'row' : 'column'}`}>
+          <div className="layout-structure-icon">{type.endsWith('row') ? 'ROW' : 'COL'}</div>
+          <div className="layout-widget__heading">{opts.title || (type === 'layout-row' ? 'Row' : 'Column')}</div>
+          <div className="layout-widget__copy">A structural block for organizing widgets visually.</div>
+        </div>
+      )
+
+    default:
+      return null
+  }
+}
+
 function renderChart(type, d, opts, blockId) {
+  if (!Array.isArray(d) || d.length === 0) {
+    return (
+      <div className="chart-empty-state">
+        <div className="chart-empty-state__icon">📊</div>
+        <div className="chart-empty-state__title">No data available</div>
+        <div className="chart-empty-state__text">Try a different date range or add chart data.</div>
+      </div>
+    )
+  }
+
   const mapping = seriesOptions(type)
   const xKey = pickOrDefault(mapping.x, opts.xKey)
   const yKey = pickOrDefault(mapping.y, opts.yKey)
@@ -574,6 +654,8 @@ function renderChart(type, d, opts, blockId) {
         </div>
       )
 
+    case 'advanced-table':
+    case 'pivot-table':
     case 'table': {
       const pageSize = 5
       const pageData = d.slice(0, pageSize)
@@ -618,19 +700,26 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [localData, setLocalData] = useState(() => block.props?.data || initData(block.type, data))
 
-  const isStatBlock = block.type.startsWith('stat-')
-  const cardVariant = isStatBlock ? 'stat' : block.type === 'table' ? 'table' : 'chart'
+  const isStatBlock = block.type.startsWith('stat-') || block.type === 'num' || block.type === 'kpi-card'
+  const isLayoutBlock = String(block.type || '').startsWith('layout-')
+  const isTableBlock = block.type === 'table' || block.type === 'advanced-table' || block.type === 'pivot-table'
+  const cardVariant = isStatBlock ? 'stat' : isTableBlock ? 'table' : isLayoutBlock ? 'layout' : 'chart'
   const base = CFG[block.type] || { title: 'Widget', subtitle: '', color: '#64748b' }
 
-  const defaultW = isStatBlock ? 312 : 360
-  const defaultH = isStatBlock ? 192 : 384
+  const defaultW = isStatBlock ? 312 : isLayoutBlock ? 360 : 360
+  const defaultH = isStatBlock ? 192 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 384
   const currentW = liveWidth || block.props?.width || defaultW
   const currentH = liveHeight || block.props?.height || defaultH
   const scaleX = Math.max(0.85, Math.min(2.5, currentW / defaultW))
   const scaleY = Math.max(0.85, Math.min(2.5, currentH / defaultH))
   const scale = Math.sqrt(scaleX * scaleY)
+
+  const liveData = useMemo(() => (
+    block.props?.data?.length
+      ? block.props.data
+      : initData(block.type, data)
+  ), [block.props?.data, block.type, data])
 
   const props = useMemo(() => ({
     title: block.props?.title || base.title,
@@ -744,14 +833,15 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>
         {isStatBlock
           ? renderStatBlock(block.type, data, props)
-          : renderChart(block.type, localData, props, block.id)
+          : String(block.type || '').startsWith('layout-')
+            ? renderLayoutBlock(block.type, props)
+            : renderChart(block.type, liveData, props, block.id)
         }
         {editing && !isStatBlock && !isPreviewMode && (
           <DataEditor
             block={block}
-            rows={localData}
+            rows={liveData}
             onSave={(rows) => {
-              setLocalData(rows);
               setEditing(false);
               onUpdateBlock?.(block.id, { data: rows });
             }}

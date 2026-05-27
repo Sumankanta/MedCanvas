@@ -82,6 +82,46 @@ function getBlockGroup(type) {
   return 'other'
 }
 
+function parseDateValue(value) {
+  if (!value) return null
+  if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+  if (typeof value === 'string') {
+    const iso = new Date(value)
+    if (!Number.isNaN(iso.getTime())) return iso
+    const parsed = Date.parse(value)
+    if (!Number.isNaN(parsed)) return new Date(parsed)
+  }
+  return null
+}
+
+function getDateBounds(dateRangeKey, customDateRange) {
+  const today = new Date()
+  if (dateRangeKey === 'today') {
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const end = new Date(start)
+    return { start, end }
+  }
+  if (dateRangeKey === 'this-week') {
+    return getWeekBounds(today)
+  }
+  if (dateRangeKey === 'last-30-days') {
+    return getLastThirtyDays(today)
+  }
+  if (dateRangeKey === 'custom') {
+    const start = parseDateValue(customDateRange.start)
+    const end = parseDateValue(customDateRange.end)
+    if (start && end) return { start, end }
+  }
+  return getMonthBounds(today)
+}
+
+function isWithinRange(dateValue, start, end) {
+  const date = parseDateValue(dateValue)
+  if (!date || !start || !end) return false
+  const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  return normalized >= start && normalized <= end
+}
+
 export default function CanvasArea({
   sections,
   data,
@@ -148,6 +188,17 @@ export default function CanvasArea({
     return `This Month (${formatRangeLabel(start, end)})`
   }, [customDateRange.end, customDateRange.start, dateRangeKey])
   const activeWidgetFilterCount = Object.values(widgetFilters).filter(Boolean).length
+  const filteredData = useMemo(() => {
+    const { start, end } = getDateBounds(dateRangeKey, customDateRange)
+    const screeningByDayData = (data.screeningByDayData || []).filter((row) => isWithinRange(row.date || row.day, start, end))
+    const patientTableData = (data.patientTableData || []).filter((row) => isWithinRange(row.dateISO || row.date, start, end))
+
+    return {
+      ...data,
+      screeningByDayData,
+      patientTableData,
+    }
+  }, [customDateRange, data, dateRangeKey])
 
   const snapValue = useCallback((val) => {
     if (!snapToGrid) return val
@@ -558,7 +609,7 @@ export default function CanvasArea({
                       <CanvasSection
                         key={section.id}
                         section={section}
-                        data={data}
+                        data={filteredData}
                         selectedId={null}
                         onSelect={undefined}
                         onUpdateBlock={onUpdateBlock}
@@ -596,8 +647,8 @@ export default function CanvasArea({
                         <SortableSection key={section.id} section={section}>
                           {({ dragHandleProps, isDraggingSection }) => (
                               <CanvasSection
-                              section={section}
-                              data={data}
+                               section={section}
+                               data={filteredData}
                               selectedId={selectedId}
                                 onSelect={onSelect}
                                 onUpdateBlock={onUpdateBlock}
@@ -662,6 +713,18 @@ export default function CanvasArea({
                 {!isPreviewMode && (
                   <button
                     className="canvas-add-section-footer"
+                    onDragOver={(e) => { e.preventDefault() }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const type = e.dataTransfer.getData('blockType')
+                      if (!type) return
+                      if (sections.length === 0) {
+                        onAddSection(type)
+                        return
+                      }
+                      const lastSection = sections[sections.length - 1]
+                      onAddBlockToSection(lastSection.id, type)
+                    }}
                     onClick={() => onAddSection(null)}
                   >
                     <Plus size={13} /> Drop widget here or click to add

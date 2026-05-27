@@ -17,10 +17,10 @@ import {
 
 const GROUPS = [
   {
-    title: 'Summary',
+    title: 'Overview',
     items: [
-      { type: 'stat-total',     name: 'Number Callout',      Icon: Hash },
-      { type: 'num',            name: 'Stat Card',           Icon: BarChart3 },
+      { type: 'kpi-card',       name: 'KPI Card',            Icon: Hash },
+      { type: 'stat-total',     name: 'Stat Card',           Icon: BarChart3 },
       { type: 'stat-positive',  name: 'Progress Indicator',  Icon: Target },
       { type: 'stat-normal',    name: 'Trend Indicator',     Icon: TrendingUp },
     ],
@@ -46,15 +46,20 @@ const GROUPS = [
   {
     title: 'Data',
     items: [
-      { type: 'table', name: 'Data Table',      Icon: Table2 },
+      { type: 'table',           name: 'Table',              Icon: Table2 },
+      { type: 'advanced-table',   name: 'Advanced Table',     Icon: Table2 },
+      { type: 'pivot-table',      name: 'Pivot Table',        Icon: Table2 },
     ],
   },
   {
     title: 'Layout',
     items: [
-      { type: 'layout-text',      name: 'Text / Title', Icon: Hash },
-      { type: 'layout-image',     name: 'Image Placeholder', Icon: PieChart },
-      { type: 'layout-divider',   name: 'Divider Line',   Icon: Minus },
+      { type: 'layout-row',       name: 'Row',                Icon: Columns3 },
+      { type: 'layout-column',    name: 'Column',             Icon: Columns3 },
+      { type: 'layout-text',      name: 'Text / Title',       Icon: Hash },
+      { type: 'layout-image',     name: 'Image',              Icon: PieChart },
+      { type: 'layout-divider',   name: 'Divider',            Icon: Minus },
+      { type: 'layout-spacer',    name: 'Spacer',             Icon: Minus },
     ],
   },
 ]

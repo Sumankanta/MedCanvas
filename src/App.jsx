@@ -64,6 +64,9 @@ const DEFAULT_BLOCK_PROPS = {
   barSize: 12,
   areaOpacity: 30,
   series2Color: '#ef4444',
+  text: 'Double-click to edit',
+  imageAlt: 'Image placeholder',
+  dividerLabel: '',
 }
 
 function makeBlock(type) {
@@ -80,8 +83,17 @@ function makeBlock(type) {
 }
 
 function defaultBlockSize(type) {
+  if (type === 'kpi-card') return { width: 288, height: 160 }
   if (type?.startsWith('stat-')) return { width: 288, height: 160 }
   if (type === 'table') return { width: 360, height: 300 }
+  if (type === 'advanced-table') return { width: 380, height: 320 }
+  if (type === 'pivot-table') return { width: 380, height: 320 }
+  if (type === 'layout-text') return { width: 360, height: 140 }
+  if (type === 'layout-image') return { width: 360, height: 220 }
+  if (type === 'layout-divider') return { width: 360, height: 72 }
+  if (type === 'layout-spacer') return { width: 360, height: 120 }
+  if (type === 'layout-row') return { width: 360, height: 180 }
+  if (type === 'layout-column') return { width: 360, height: 180 }
   return { width: 360, height: 300 }
 }
 

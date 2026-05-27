@@ -8,6 +8,7 @@ const CHART_COLORS = [
 ]
 
 const BLOCK_NAMES = {
+  'kpi-card':       'KPI Card',
   'chart-bar':      'Bar Chart',
   'chart-stacked':  'Stacked Bar',
   'chart-line':     'Line Chart',
@@ -21,10 +22,18 @@ const BLOCK_NAMES = {
   'chart-radialbar':'Radial Bar',
   'chart-scatter':  'Age Groups',
   num:              'Stat Block',
-  table:            'Patient Table',
-  'stat-total':     'Number Callout',
-  'stat-positive':  'Number Callout',
-  'stat-normal':    'Number Callout',
+  table:            'Table',
+  'advanced-table': 'Advanced Table',
+  'pivot-table':    'Pivot Table',
+  'layout-row':     'Row',
+  'layout-column':  'Column',
+  'layout-text':    'Text / Title',
+  'layout-image':   'Image',
+  'layout-divider': 'Divider',
+  'layout-spacer':  'Spacer',
+  'stat-total':     'Stat Card',
+  'stat-positive':  'Progress Indicator',
+  'stat-normal':    'Trend Indicator',
   'stat-oral':      'Number Callout',
   'stat-anemia':    'Number Callout',
   'stat-locations': 'Number Callout',
@@ -32,6 +41,7 @@ const BLOCK_NAMES = {
 }
 
 const WIDGET_DESCRIPTIONS = {
+  'kpi-card':       'Displays a quick KPI snapshot',
   'stat-total':     'Displays a key metric or KPI',
   'stat-positive':  'Displays a key metric or KPI',
   'stat-normal':    'Displays a key metric or KPI',
@@ -48,6 +58,14 @@ const WIDGET_DESCRIPTIONS = {
   'chart-donut':    'Displays data distribution as a donut',
   'chart-pie':      'Displays data distribution as a pie',
   table:            'Displays data in a tabular format',
+  'advanced-table': 'Displays richer table controls and data',
+  'pivot-table':    'Displays grouped table summaries',
+  'layout-row':     'Creates a horizontal layout container',
+  'layout-column':  'Creates a vertical layout container',
+  'layout-text':    'Adds a title or text content block',
+  'layout-image':   'Adds an image placeholder block',
+  'layout-divider': 'Adds a thin divider line',
+  'layout-spacer':  'Adds spacing inside the canvas',
 }
 
 const DEFAULT_PROPS = {
@@ -61,6 +79,9 @@ const DEFAULT_PROPS = {
   strokeWidth: 2, barRadius: 4,
   innerRadius: 30, outerRadius: 55, barSize: 12,
   areaOpacity: 30, series2Color: '#ef4444',
+  text: 'Double-click to edit',
+  imageAlt: 'Image placeholder',
+  dividerLabel: '',
 }
 
 const FONT_FAMILIES = [
@@ -122,8 +143,9 @@ export default function LeftPanel({
 
   const widgetType = BLOCK_NAMES[selectedBlock.type] || 'Widget'
   const widgetDesc = WIDGET_DESCRIPTIONS[selectedBlock.type] || ''
-  const isStat = isStatType(selectedBlock.type)
+  const isStat = isStatType(selectedBlock.type) || selectedBlock.type === 'kpi-card'
   const isChart = selectedBlock.type?.startsWith('chart-')
+  const isLayout = selectedBlock.type?.startsWith('layout-')
 
   const handleUpdate = (patch) => {
     onUpdateBlock(patch)
@@ -408,6 +430,55 @@ export default function LeftPanel({
               <span>Larger</span>
             </div>
           </div>
+        )}
+
+        {isLayout && (
+          <Section title="Layout Content" defaultOpen>
+            {selectedBlock.type === 'layout-text' && (
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div>
+                  <div className="wp-label">Text</div>
+                  <textarea
+                    className="wp-input"
+                    style={{ minHeight: 88, resize: 'vertical', lineHeight: 1.5 }}
+                    value={props.text || ''}
+                    onChange={(e) => handleUpdate({ text: e.target.value })}
+                    placeholder="Add text content"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedBlock.type === 'layout-image' && (
+              <div>
+                <div className="wp-label">Image Alt Text</div>
+                <input
+                  className="wp-input"
+                  value={props.imageAlt || ''}
+                  onChange={(e) => handleUpdate({ imageAlt: e.target.value })}
+                  placeholder="Describe the image placeholder"
+                />
+              </div>
+            )}
+
+            {selectedBlock.type === 'layout-divider' && (
+              <div>
+                <div className="wp-label">Divider Label</div>
+                <input
+                  className="wp-input"
+                  value={props.dividerLabel || ''}
+                  onChange={(e) => handleUpdate({ dividerLabel: e.target.value })}
+                  placeholder="Optional label"
+                />
+              </div>
+            )}
+
+            {(selectedBlock.type === 'layout-row' || selectedBlock.type === 'layout-column' || selectedBlock.type === 'layout-spacer') && (
+              <p className="wp-placeholder-text">
+                This block is structural. Resize it on the canvas to shape the empty space or container.
+              </p>
+            )}
+          </Section>
         )}
 
         <div style={{ height: '8px' }}></div>
