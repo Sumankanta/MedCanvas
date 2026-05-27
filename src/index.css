@@ -4091,7 +4091,7 @@ body {
   color: #667085;
 }
 
-.map-chart,
+.treemap-chart,
 .heatmap-chart {
   width: 100%;
   height: 100%;
@@ -4101,31 +4101,34 @@ body {
   gap: 10px;
 }
 
-.map-chart__canvas {
+.treemap-chart__canvas {
   flex: 1;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-content: center;
+  min-height: 0;
 }
 
-.map-chart__row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.treemap-chart__row {
+  flex: 1;
+  display: flex;
   gap: 10px;
+  min-height: 0;
 }
 
-.map-chart__tile {
-  min-height: 86px;
+.treemap-chart__tile {
+  min-width: 92px;
   border-radius: 14px;
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.14);
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   color: #0f172a;
+  overflow: hidden;
 }
 
-.map-chart__camp {
+.treemap-chart__camp {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -4133,17 +4136,17 @@ body {
   font-weight: 700;
 }
 
-.map-chart__tile strong {
+.treemap-chart__tile strong {
   font-size: 18px;
   line-height: 1.1;
 }
 
-.map-chart__tile span:last-child {
+.treemap-chart__tile span:last-child {
   font-size: 11px;
   color: #334155;
 }
 
-.map-chart__legend,
+.treemap-chart__legend,
 .heatmap-chart__scale {
   display: flex;
   align-items: center;
@@ -4154,46 +4157,120 @@ body {
   color: #64748b;
 }
 
-.map-chart__legend-item {
-  display: flex;
+.treemap-chart__legend span {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.map-chart__legend-item span {
+.heatmap-chart__months {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #64748b;
+  padding: 0 2px;
+}
+
+.heatmap-chart__calendar {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+  align-content: stretch;
+  min-height: 220px;
+}
+
+.heatmap-chart__weekday {
+  grid-column: 1;
+  align-self: center;
+  justify-self: center;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.heatmap-chart__day {
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 6px;
+  color: #7c2d12;
+  overflow: hidden;
+}
+
+.heatmap-chart__day strong {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.treemap-chart {
+  min-height: 240px;
+}
+
+.treemap-chart svg {
+  overflow: visible;
+}
+
+.treemap-chart__legend {
+  gap: 14px;
+}
+
+.heatmap-chart__scale {
+  gap: 14px;
+}
+
+.heatmap-chart__scale span,
+.treemap-chart__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.treemap-chart__legend-item i {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(59,130,246,0.18), rgba(59,130,246,0.7));
+  display: inline-block;
 }
 
-.heatmap-chart__grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  align-content: center;
+.heatmap-chart__scale span::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  background: #cbd5e1;
 }
 
-.heatmap-chart__cell {
-  min-height: 86px;
-  border-radius: 14px;
-  border: 1px solid rgba(239, 68, 68, 0.14);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: #111827;
+.heatmap-chart__scale span:nth-child(1)::before {
+  background: rgba(239, 68, 68, 0.2);
 }
 
-.heatmap-chart__cell span {
-  font-size: 10px;
-  color: #374151;
+.heatmap-chart__scale span:nth-child(2)::before {
+  background: rgba(239, 68, 68, 0.45);
 }
 
-.heatmap-chart__cell strong {
-  font-size: 18px;
-  line-height: 1.1;
+.heatmap-chart__scale span:nth-child(3)::before {
+  background: rgba(239, 68, 68, 0.78);
+}
+
+.heatmap-chart__day.is-active {
+  color: #7f1d1d;
+}
+
+.heatmap-chart--empty {
+  justify-content: center;
+}
+
+.heatmap-chart__calendar .heatmap-chart__weekday {
+  padding-top: 2px;
+}
+
+.heatmap-chart__calendar .heatmap-chart__day {
+  aspect-ratio: 1;
 }
 
 .pt-wrap {

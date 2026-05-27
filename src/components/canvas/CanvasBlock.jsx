@@ -295,70 +295,172 @@ function renderLayoutBlock(type, opts) {
   }
 }
 
-function renderGeoMapChart(d, opts) {
-  const max = Math.max(...d.map((item) => Number(item.screened || 0)), 1)
-  const mapRows = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10)]
+function renderTreemapChart(d) {
+  const sorted = [...d]
+    .map((item, index) => ({
+      name: item.camp,
+      value: Number(item.screened || 0),
+      positive: Number(item.positive || 0),
+      fill: BASE_COLORS[index % BASE_COLORS.length],
+    }))
+    .sort((a, b) => b.value - a.value)
+
+  const rows = [[], [], []]
+  const rowTotals = [0, 0, 0]
+  sorted.forEach((item) => {
+    const targetIndex = rowTotals.indexOf(Math.min(...rowTotals))
+    rows[targetIndex].push(item)
+    rowTotals[targetIndex] += item.value
+  })
+
+  const max = Math.max(...sorted.map((item) => item.value), 1)
+
   return (
-    <div className="map-chart">
-      <div className="map-chart__canvas">
-        {mapRows.map((row, rowIndex) => (
-          <div key={rowIndex} className="map-chart__row">
+    <div className="treemap-chart">
+      <div className="treemap-chart__canvas">
+        {rows.map((row, rowIndex) => (
+          <div key={rowIndex} className="treemap-chart__row">
             {row.map((item) => {
-              const strength = Number(item.screened || 0) / max
+              const strength = item.value / max
               return (
                 <div
-                  key={item.camp}
-                  className="map-chart__tile"
+                  key={item.name}
+                  className="treemap-chart__tile"
                   style={{
-                    background: `rgba(59, 130, 246, ${0.08 + strength * 0.45})`,
-                    borderColor: `rgba(59, 130, 246, ${0.12 + strength * 0.5})`,
+                    flex: `${Math.max(1, item.value)} 1 0%`,
+                    background: `linear-gradient(180deg, rgba(59, 130, 246, ${0.14 + strength * 0.42}), rgba(59, 130, 246, ${0.08 + strength * 0.25}))`,
+                    borderColor: `rgba(59, 130, 246, ${0.16 + strength * 0.42})`,
                   }}
                 >
-                  <span className="map-chart__camp">{item.camp}</span>
-                  <strong>{item.screened}</strong>
-                  <span>Positive {item.positive}</span>
+                  <span className="treemap-chart__camp">{item.name}</span>
+                  <strong>{item.value.toLocaleString()}</strong>
+                  <span>Positive {item.positive.toLocaleString()}</span>
                 </div>
               )
             })}
           </div>
         ))}
       </div>
-      <div className="map-chart__legend">
-        <div className="map-chart__legend-item"><span /> Low</div>
-        <div className="map-chart__legend-item"><span /> Medium</div>
-        <div className="map-chart__legend-item"><span /> High</div>
+      <div className="treemap-chart__legend">
+        <span className="treemap-chart__legend-item"><i style={{ background: '#3b82f6' }} /> Screened</span>
+        <span className="treemap-chart__legend-item"><i style={{ background: '#ef4444' }} /> Positive cases</span>
       </div>
     </div>
   )
 }
 
-function renderHeatMapChart(d, opts) {
-  const cells = d.slice(-12)
-  const max = Math.max(...cells.map((item) => Number(item.screened || 0)), 1)
+function parseHeatmapDate(value) {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function startOfWeekMonday(date) {
+  const d = new Date(date)
+  const day = (d.getDay() + 6) % 7
+  d.setDate(d.getDate() - day)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function endOfWeekSunday(date) {
+  const d = startOfWeekMonday(date)
+  d.setDate(d.getDate() + 6)
+  return d
+}
+
+function addDays(date, days) {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function formatHeatmapDay(date) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
+}
+
+function formatHeatmapWeekday(date) {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date).slice(0, 1)
+}
+
+function renderHeatMapChart(d) {
+  const source = d
+    .map((item) => {
+      const date = parseHeatmapDate(item.date || item.dateISO || item.day)
+      return date ? { ...item, __date: date } : null
+    })
+    .filter(Boolean)
+
+  if (source.length === 0) {
+    return (
+      <div className="heatmap-chart heatmap-chart--empty">
+        <div className="chart-empty-state">
+          <div className="chart-empty-state__icon">🔥</div>
+          <div className="chart-empty-state__title">No calendar data</div>
+          <div className="chart-empty-state__text">Add dated entries to see the heat map.</div>
+        </div>
+      </div>
+    )
+  }
+
+  const minDate = source.reduce((acc, item) => (item.__date < acc ? item.__date : acc), source[0].__date)
+  const maxDate = source.reduce((acc, item) => (item.__date > acc ? item.__date : acc), source[0].__date)
+  const start = startOfWeekMonday(minDate)
+  const end = endOfWeekSunday(maxDate)
+  const totalDays = Math.round((end - start) / 86400000) + 1
+  const calendar = Array.from({ length: totalDays }, (_, i) => addDays(start, i))
+  const byIso = new Map(source.map((item) => [item.__date.toISOString().slice(0, 10), item]))
+  const values = source.map((item) => Number(item.screened || item.value || 0))
+  const max = Math.max(...values, 1)
+
+  const weeks = Math.ceil(totalDays / 7)
+  const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+
   return (
-    <div className="heatmap-chart">
-      <div className="heatmap-chart__grid">
-        {cells.map((item) => {
-          const strength = Number(item.screened || 0) / max
+    <div className="heatmap-chart heatmap-chart--calendar">
+      <div className="heatmap-chart__months">
+        <span>{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(start)}</span>
+        <span>{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(end)}</span>
+      </div>
+      <div
+        className="heatmap-chart__calendar"
+        style={{
+          gridTemplateColumns: `18px repeat(${weeks}, minmax(0, 1fr))`,
+          gridTemplateRows: 'repeat(7, minmax(18px, 1fr))',
+        }}
+      >
+        {weekdays.map((day, i) => (
+          <div key={day + i} className="heatmap-chart__weekday" style={{ gridRow: i + 1, gridColumn: 1 }}>
+            {day}
+          </div>
+        ))}
+        {calendar.map((date, i) => {
+          const iso = date.toISOString().slice(0, 10)
+          const item = byIso.get(iso)
+          const value = Number(item?.screened ?? item?.value ?? 0)
+          const strength = value / max
+          const col = Math.floor(i / 7) + 2
+          const row = ((date.getDay() + 6) % 7) + 1
           return (
             <div
-              key={item.date || item.day}
-              className="heatmap-chart__cell"
-              title={`${item.day}: ${item.screened} screened`}
+              key={iso}
+              className={`heatmap-chart__day${item ? ' is-active' : ''}`}
+              title={item ? `${formatHeatmapDay(date)}: ${value} screened` : formatHeatmapDay(date)}
               style={{
-                background: `rgba(239, 68, 68, ${0.08 + strength * 0.62})`,
-                borderColor: `rgba(239, 68, 68, ${0.12 + strength * 0.55})`,
+                gridColumn: col,
+                gridRow: row,
+                background: item ? `rgba(239, 68, 68, ${0.12 + strength * 0.7})` : 'rgba(148, 163, 184, 0.08)',
+                borderColor: item ? `rgba(239, 68, 68, ${0.18 + strength * 0.45})` : 'rgba(148, 163, 184, 0.12)',
               }}
             >
-              <span>{item.day}</span>
-              <strong>{item.screened}</strong>
+              {item && <strong>{value}</strong>}
             </div>
           )
         })}
       </div>
       <div className="heatmap-chart__scale">
         <span>Low</span>
-        <span>Mid</span>
+        <span>Medium</span>
         <span>High</span>
       </div>
     </div>
@@ -376,7 +478,7 @@ function renderChart(type, d, opts, blockId) {
     )
   }
 
-  if (type === 'chart-map') return renderGeoMapChart(d, opts)
+  if (type === 'chart-map') return renderTreemapChart(d, opts)
   if (type === 'chart-heatmap') return renderHeatMapChart(d, opts)
 
   const mapping = seriesOptions(type)
