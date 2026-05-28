@@ -259,7 +259,13 @@ function renderLayoutBlock(type, opts) {
     case 'layout-image':
       return (
         <div className="layout-widget layout-widget--image">
-          <div className="layout-image-placeholder" aria-hidden="true">IMG</div>
+          {opts.imageSrc ? (
+            <div className="layout-image-preview">
+              <img src={opts.imageSrc} alt={opts.imageAlt || 'Uploaded image'} />
+            </div>
+          ) : (
+            <div className="layout-image-placeholder" aria-hidden="true">IMG</div>
+          )}
           <div className="layout-widget__heading">{opts.title || 'Image placeholder'}</div>
           <div className="layout-widget__copy">{opts.imageAlt || 'Drop an image or keep this as a visual placeholder.'}</div>
         </div>
@@ -927,6 +933,10 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     barSize: Number(block.props?.barSize ?? 12),
     areaOpacity: Number(block.props?.areaOpacity ?? 30),
     series2Color: block.props?.series2Color || '#ef4444',
+    text: block.props?.text || 'Double-click to edit',
+    imageAlt: block.props?.imageAlt || 'Image placeholder',
+    imageSrc: block.props?.imageSrc || '',
+    dividerLabel: block.props?.dividerLabel || '',
   }), [block.props, base.color, base.subtitle, base.title, scale])
 
   return (

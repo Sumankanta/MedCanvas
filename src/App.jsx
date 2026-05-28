@@ -66,6 +66,7 @@ const DEFAULT_BLOCK_PROPS = {
   series2Color: '#ef4444',
   text: 'Double-click to edit',
   imageAlt: 'Image placeholder',
+  imageSrc: '',
   dividerLabel: '',
 }
 

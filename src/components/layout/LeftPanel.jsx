@@ -85,6 +85,7 @@ const DEFAULT_PROPS = {
   areaOpacity: 30, series2Color: '#ef4444',
   text: 'Double-click to edit',
   imageAlt: 'Image placeholder',
+  imageSrc: '',
   dividerLabel: '',
 }
 
@@ -450,18 +451,62 @@ export default function LeftPanel({
                     placeholder="Add text content"
                   />
                 </div>
+                <p className="wp-placeholder-text">
+                  Type anything you want here. This text updates directly on the canvas.
+                </p>
               </div>
             )}
 
             {selectedBlock.type === 'layout-image' && (
-              <div>
-                <div className="wp-label">Image Alt Text</div>
-                <input
-                  className="wp-input"
-                  value={props.imageAlt || ''}
-                  onChange={(e) => handleUpdate({ imageAlt: e.target.value })}
-                  placeholder="Describe the image placeholder"
-                />
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                  <div className="wp-label">Image from local system</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="wp-input"
+                    style={{ paddingTop: 7, paddingBottom: 7 }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onload = () => {
+                        handleUpdate({
+                          imageSrc: String(reader.result || ''),
+                          imageAlt: file.name || props.imageAlt || 'Uploaded image',
+                        })
+                      }
+                      reader.readAsDataURL(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </div>
+                <div>
+                  <div className="wp-label">Image from internet</div>
+                  <input
+                    className="wp-input"
+                    value={props.imageSrc || ''}
+                    onChange={(e) => handleUpdate({ imageSrc: e.target.value })}
+                    placeholder="Paste an image URL"
+                  />
+                </div>
+                <div>
+                  <div className="wp-label">Image Alt Text</div>
+                  <input
+                    className="wp-input"
+                    value={props.imageAlt || ''}
+                    onChange={(e) => handleUpdate({ imageAlt: e.target.value })}
+                    placeholder="Describe the image"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="wp-delete-btn-flat"
+                  style={{ justifyContent: 'center', marginTop: 2 }}
+                  onClick={() => handleUpdate({ imageSrc: '', imageAlt: 'Image placeholder' })}
+                >
+                  Clear image
+                </button>
               </div>
             )}
 
