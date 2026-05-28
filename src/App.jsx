@@ -513,7 +513,12 @@ export default function App() {
         const clone = {
           ...original,
           id: newId,
-          props: { ...DEFAULT_BLOCK_PROPS, ...original.props },
+          props: { 
+            ...DEFAULT_BLOCK_PROPS, 
+            ...original.props,
+            x: (Number(original.props?.x) || 0) + 24,
+            y: (Number(original.props?.y) || 0) + 24,
+          },
         }
         const newColSpanMap = { ...s.colSpanMap }
         if (newColSpanMap[blockId]) {

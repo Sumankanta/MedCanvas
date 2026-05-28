@@ -140,7 +140,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   }
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, isPreviewMode = false, filteredOut = false }) {
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, zoom = 100, isPreviewMode = false, filteredOut = false }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
@@ -204,11 +204,14 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       const canvas = canvasRef.current
       const rect = canvas?.getBoundingClientRect()
       if (!rect) return
-      const rawX = startLeft + (ev.clientX - startX)
-      const rawY = startTop + (ev.clientY - startY)
+      
+      const zoomScale = zoom / 100
+      const rawX = startLeft + (ev.clientX - startX) / zoomScale
+      const rawY = startTop + (ev.clientY - startY) / zoomScale
+      
       const snappedX = snapValue ? snapValue(rawX) : rawX
       const snappedY = snapValue ? snapValue(rawY) : rawY
-      const nextX = clamp(snappedX, 0, Math.max(0, rect.width - w))
+      const nextX = clamp(snappedX, 0, Math.max(0, rect.width / zoomScale - w))
       const nextY = clamp(snappedY, 0, 3000)
       const placed = resolveNoOverlap({ x: Math.round(nextX), y: Math.round(nextY), w, h }, otherRects)
       setLiveRect((prev) => ({
@@ -243,8 +246,10 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
     setIsResizing(true)
 
     function move(ev) {
-      const rawW = startW + (ev.clientX - startX)
-      const rawH = startH + (ev.clientY - startY)
+      const zoomScale = zoom / 100
+      const rawW = startW + (ev.clientX - startX) / zoomScale
+      const rawH = startH + (ev.clientY - startY) / zoomScale
+      
       const snappedW = snapValue ? snapValue(rawW) : rawW
       const snappedH = snapValue ? snapValue(rawH) : rawH
       const nextW = clamp(snappedW, minWidthForType(block.type), 1200)

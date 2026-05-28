@@ -193,10 +193,27 @@ export default function CanvasArea({
     const screeningByDayData = (data.screeningByDayData || []).filter((row) => isWithinRange(row.date || row.day, start, end))
     const patientTableData = (data.patientTableData || []).filter((row) => isWithinRange(row.dateISO || row.date, start, end))
 
+    // Aggregate statVariables from filtered series
+    const totalScreened = screeningByDayData.reduce((acc, r) => acc + (Number(r.screened) || 0), 0)
+    const oralCancer = screeningByDayData.reduce((acc, r) => acc + (Number(r.positive) || 0), 0)
+    const normal = screeningByDayData.reduce((acc, r) => acc + (Number(r.normal) || 0), 0)
+    const referred = patientTableData.reduce((acc, r) => acc + (Number(r.referred) || 0), 0)
+    const testsTotal = Math.round(totalScreened * 1.65)
+
+    const statVariables = [
+      { key: 'totalScreened', label: 'Patients Screened', value: totalScreened },
+      { key: 'oralCancer', label: 'Positive Cases', value: oralCancer },
+      { key: 'anemia', label: 'Suspected', value: Math.round(oralCancer * 0.8) },
+      { key: 'normal', label: 'Normal', value: normal },
+      { key: 'locations', label: 'Referred', value: referred },
+      { key: 'testsTotal', label: 'Tests Conducted', value: testsTotal },
+    ]
+
     return {
       ...data,
       screeningByDayData,
       patientTableData,
+      statVariables,
     }
   }, [customDateRange, data, dateRangeKey])
 
@@ -426,7 +443,7 @@ export default function CanvasArea({
 
       {/* ── Viewport ── */}
       <div
-        className={`canvas-viewport canvas-viewport--${responsiveMode}${effectiveShowGrid ? ' canvas-viewport--grid' : ''}${isPreviewMode ? ' canvas-viewport--preview' : ''}`}
+        className={`canvas-viewport canvas-viewport--${responsiveMode}${isPreviewMode ? ' canvas-viewport--preview' : ''}`}
         onDragOver={isPreviewMode ? undefined : (e) => { e.preventDefault(); setIsDragOver(true) }}
         onDragLeave={isPreviewMode ? undefined : (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
         onDrop={isPreviewMode ? undefined : handleCanvasDrop}
@@ -449,7 +466,10 @@ export default function CanvasArea({
                   value={dashboardTitle}
                   onChange={(e) => onUpdateDashboardTitle(e.target.value)}
                   onBlur={() => setEditingTitle(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingTitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setEditingTitle(false)
+                    if (e.key === 'Escape') setEditingTitle(false)
+                  }}
                 />
               ) : (
                 <h1 onClick={() => setEditingTitle(true)} className="dashboard-title">
@@ -464,7 +484,10 @@ export default function CanvasArea({
                   value={dashboardSubtitle}
                   onChange={(e) => onUpdateDashboardSubtitle(e.target.value)}
                   onBlur={() => setEditingSubtitle(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setEditingSubtitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setEditingSubtitle(false)
+                    if (e.key === 'Escape') setEditingSubtitle(false)
+                  }}
                 />
               ) : (
                 <div className="dashboard-subtitle-row">
@@ -624,6 +647,7 @@ export default function CanvasArea({
                         showGrid={false}
                         gridSize={GRID_SIZE}
                         snapValue={snapValue}
+                        zoom={zoom}
                         isPreviewMode
                         responsiveMode={responsiveMode}
                       />
@@ -667,6 +691,7 @@ export default function CanvasArea({
                                 showGrid={showGrid}
                                 gridSize={GRID_SIZE}
                                 snapValue={snapValue}
+                                zoom={zoom}
                                 isPreviewMode={false}
                                 responsiveMode={responsiveMode}
                               />

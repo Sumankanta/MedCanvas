@@ -158,7 +158,18 @@ function renderStatBlock(type, data, props) {
 
 function DataEditor({ block, rows, onSave, onClose }) {
   const [data, setData] = useState(() => JSON.parse(JSON.stringify(rows)))
-  const labelKey = { 'chart-pie': 'label', 'chart-donut': 'label', 'chart-radialbar': 'camp', 'chart-scatter': 'group', num: 'label', table: 'name' }[block.type] || 'day'
+  const labelKey = { 
+    'chart-pie': 'label', 
+    'chart-donut': 'label', 
+    'chart-radialbar': 'camp', 
+    'chart-scatter': 'group', 
+    'chart-map': 'camp',
+    'chart-radar': 'camp',
+    'chart-hbar': 'name',
+    'chart-treemap': 'name',
+    num: 'label', 
+    table: 'name' 
+  }[block.type] || 'day'
   const numKeys = data[0] ? Object.keys(data[0]).filter((k) => k !== labelKey && typeof data[0][k] === 'number') : []
 
   function update(ri, key, val) {
@@ -816,7 +827,7 @@ function renderChart(type, d, opts, blockId) {
             <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
             <Tooltip {...TOOLTIP_PROPS} />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={chartBarSize}>
+            <Bar dataKey={yKey} radius={[0, 4, 4, 0]} barSize={chartBarSize}>
               {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
             </Bar>
           </BarChart>
