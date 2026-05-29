@@ -269,6 +269,7 @@ export default function App() {
   const [zoom, setZoom] = useState(100)
   const [isExporting, setIsExporting] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [showDraftBadge, setShowDraftBadge] = useState(true)
   const [browserMode, setBrowserMode] = useState(getResponsiveMode)
   const [previewMode, setPreviewMode] = useState(null)
   const rootRef = useRef(null)
@@ -290,6 +291,10 @@ export default function App() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    setShowDraftBadge(true)
+  }, [dashboardState])
 
   const handleResponsiveModeChange = useCallback((mode) => {
     setPreviewMode(mode)
@@ -316,6 +321,7 @@ export default function App() {
         title: currentTitle,
         subtitle: currentSubtitle,
       }))
+      setShowDraftBadge(false)
     } catch {
       // ignore storage failures
     }
@@ -812,6 +818,7 @@ export default function App() {
       <TopBar
         dashboardTitle={title}
         onUpdateDashboardTitle={setDashboardTitle}
+        showDraftBadge={showDraftBadge}
         isPreviewMode={isPreviewMode}
         onSetPreviewMode={setIsPreviewMode}
         campInfo={data.campInfo}

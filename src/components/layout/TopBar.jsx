@@ -19,6 +19,7 @@ import {
 
 export default function TopBar({
   dashboardTitle, onUpdateDashboardTitle,
+  showDraftBadge = true,
   isPreviewMode, onSetPreviewMode,
   onUndo, onRedo, canUndo, canRedo,
   zoom, onZoom, leftOpen, rightOpen, onToggleLeft, onToggleRight,
@@ -68,7 +69,7 @@ export default function TopBar({
               </button>
             </>
           )}
-          <span className="draft-badge">Draft</span>
+          {showDraftBadge && <span className="draft-badge">Draft</span>}
         </div>
       </div>
 
