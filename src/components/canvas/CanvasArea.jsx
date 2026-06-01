@@ -630,7 +630,7 @@ export default function CanvasArea({
                   <div className="sections-list sections-list--preview">
                     {sections.map((section) => (
                       <CanvasSection
-                        key={section.id}
+                        key={`${section.id}-${responsiveMode}`}
                         section={section}
                         data={filteredData}
                         selectedId={null}
@@ -668,9 +668,10 @@ export default function CanvasArea({
                     >
                       <div className="sections-list">
                         {sections.map((section) => (
-                        <SortableSection key={section.id} section={section}>
+                        <SortableSection key={`${section.id}-${responsiveMode}`} section={section}>
                           {({ dragHandleProps, isDraggingSection }) => (
                               <CanvasSection
+                               key={`${section.id}-${responsiveMode}`}
                                section={section}
                                data={filteredData}
                               selectedId={selectedId}

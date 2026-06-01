@@ -1482,6 +1482,18 @@ body.is-exporting .block-drag-handle,
   min-height: 0;
 }
 
+.card-body-content {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body-content > * {
+  min-height: 0;
+}
+
 .card-body--stat {
   display: flex;
   align-items: stretch;

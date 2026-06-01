@@ -140,7 +140,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   }
 }
 
-const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, zoom = 100, isPreviewMode = false, filteredOut = false }) {
+const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onRemove, onDuplicate, onUpdateBlock, canvasRef, canvasWidth, otherRects, snapValue, displayRect, zoom = 100, responsiveMode = 'desktop', isPreviewMode = false, filteredOut = false }) {
   const props = block.props || {}
   const defaults = defaultSize(block.type)
   const [liveRect, setLiveRect] = useState({
@@ -345,6 +345,7 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
           onSelect={() => onSelect?.(block.id)}
           liveWidth={displayRect?.w ?? (isPreviewMode ? (canvasWidth || w) : w)}
           liveHeight={displayRect?.h ?? (isPreviewMode ? Math.max(250, h) : h)}
+          responsiveMode={responsiveMode}
           isPreviewMode={isPreviewMode}
         />
 
@@ -385,8 +386,7 @@ export default function CanvasSection({
   const [isDragOver, setIsDragOver] = useState(false)
   const [canvasWidth, setCanvasWidth] = useState(0)
   const canvasRef = useRef(null)
-  const previousResponsiveModeRef = useRef(responsiveMode)
-  const desktopReflowRef = useRef(false)
+  const hasPackedOnceRef = useRef(false)
   const blocks = section.blocks || []
   const getFilterKey = (type) => {
     if (type === 'table') return 'table'
@@ -412,14 +412,6 @@ export default function CanvasSection({
   }, [blocks, responsiveLayout])
 
   useEffect(() => {
-    const previousMode = previousResponsiveModeRef.current
-    if (previousMode !== 'desktop' && responsiveMode === 'desktop') {
-      desktopReflowRef.current = true
-    }
-    previousResponsiveModeRef.current = responsiveMode
-  }, [responsiveMode])
-
-  useEffect(() => {
     const node = canvasRef.current
     if (!node) return undefined
 
@@ -429,12 +421,27 @@ export default function CanvasSection({
     const observer = new ResizeObserver(update)
     observer.observe(node)
     return () => observer.disconnect()
-  }, [blocks.length, collapsed])
+  }, [blocks.length, collapsed, responsiveMode])
 
+  // One-time auto-pack: only runs when blocks have never been positioned
+  // (all at origin x=0,y=0) to avoid overlap on first load.
+  // This does NOT run on breakpoint switches — desktop props are always
+  // preserved because tablet/mobile only use a virtual displayRect.
   useEffect(() => {
     if (isPreviewMode || responsiveMode !== 'desktop') return
-    if (!desktopReflowRef.current) return
+    if (hasPackedOnceRef.current) return
     if (!canvasWidth || canvasWidth < 220 || blocks.length <= 1) return
+
+    // Only repack if ALL blocks are at the default origin (never been positioned)
+    const allAtOrigin = blocks.every((b) => {
+      const x = Number(b.props?.x ?? 0)
+      const y = Number(b.props?.y ?? 0)
+      return x === 0 && y === 0
+    })
+    if (!allAtOrigin) {
+      hasPackedOnceRef.current = true
+      return
+    }
 
     const current = blocks.map((b) => {
       const d = defaultSize(b.type)
@@ -448,12 +455,15 @@ export default function CanvasSection({
       }
     })
 
-    const packed = packWithoutOverlap(current, canvasWidth, { fromTop: true })
+    const packed = packWithoutOverlap(current, canvasWidth, { fromTop: false })
     const changes = packed.filter((p) => {
       const c = current.find((x) => x.id === p.id)
       return !c || c.x !== p.x || c.y !== p.y || c.w !== p.w || c.h !== p.h
     })
-    if (changes.length === 0) return
+    if (changes.length === 0) {
+      hasPackedOnceRef.current = true
+      return
+    }
 
     const packedById = Object.fromEntries(packed.map((p) => [p.id, p]))
     const nextBlocks = blocks.map((b) => {
@@ -471,7 +481,7 @@ export default function CanvasSection({
       }
     })
 
-    desktopReflowRef.current = false
+    hasPackedOnceRef.current = true
     onUpdateSection(section.id, { blocks: nextBlocks }, { skipHistory: true })
   }, [blocks, canvasWidth, onUpdateSection, responsiveMode, section.id, isPreviewMode])
 
@@ -581,6 +591,7 @@ export default function CanvasSection({
             </div>
           ) : (
             <div
+              key={`${section.id}-${responsiveMode}`}
               ref={canvasRef}
               className={`section-free-canvas${isDragOver ? ' section-free-canvas--over' : ''}${showGrid ? ' section-free-canvas--grid' : ''}${isPreviewMode ? ' section-free-canvas--preview' : ''}`}
               style={{

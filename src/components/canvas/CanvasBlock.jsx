@@ -484,7 +484,7 @@ function renderHeatMapChart(d) {
   )
 }
 
-function renderChart(type, d, opts, blockId) {
+function renderChart(type, d, opts, blockId, layoutKey) {
   if (!Array.isArray(d) || d.length === 0) {
     return (
       <div className="chart-empty-state">
@@ -544,7 +544,7 @@ function renderChart(type, d, opts, blockId) {
   switch (type) {
     case 'chart-bar':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -562,7 +562,7 @@ function renderChart(type, d, opts, blockId) {
 
     case 'chart-stacked':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -580,7 +580,7 @@ function renderChart(type, d, opts, blockId) {
 
     case 'chart-line':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <LineChart data={d} margin={{ top: 10, right: 14, left: 0, bottom: 24 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -605,7 +605,7 @@ function renderChart(type, d, opts, blockId) {
       const gradB = `grad-b-${blockId}`
       const fillOpacity = Math.max(0.05, Math.min(0.8, opts.areaOpacity / 100))
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <AreaChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={gradA} x1="0" y1="0" x2="0" y2="1">
@@ -644,7 +644,7 @@ function renderChart(type, d, opts, blockId) {
 
     case 'chart-combo':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <ComposedChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -664,7 +664,7 @@ function renderChart(type, d, opts, blockId) {
 
     case 'chart-stackedarea':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <AreaChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -682,7 +682,7 @@ function renderChart(type, d, opts, blockId) {
 
     case 'chart-sparkline':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <LineChart data={d} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
             <XAxis dataKey={xKey} hide />
             <YAxis hide />
@@ -701,7 +701,7 @@ function renderChart(type, d, opts, blockId) {
         90,
       )
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <PieChart>
             <Pie data={d} cx="50%" cy="45%"
               innerRadius={`${pieInner}%`}
@@ -724,7 +724,7 @@ function renderChart(type, d, opts, blockId) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 8 }}>
           <div style={{ flex: '0 0 55%', height: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer key={layoutKey} width="100%" height="100%">
               <PieChart>
                 <Pie data={d} cx="50%" cy="50%"
                   innerRadius={`${donutInner}%`} outerRadius={`${donutOuter}%`}
@@ -760,7 +760,7 @@ function renderChart(type, d, opts, blockId) {
         90,
       )
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <RadialBarChart
             cx="50%"
             cy="60%"
@@ -787,7 +787,7 @@ function renderChart(type, d, opts, blockId) {
         positive: Number(row.positive ?? 0),
       }))
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <RadarChart data={radarData}>
             <PolarGrid stroke="rgba(99,179,237,0.12)" />
             <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b' }} />
@@ -804,7 +804,7 @@ function renderChart(type, d, opts, blockId) {
     case 'chart-scatter': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
@@ -821,7 +821,7 @@ function renderChart(type, d, opts, blockId) {
     case 'chart-hbar': {
       const HBAR_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
           <BarChart data={d} layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 0 }}>
             {grid}
             <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
@@ -892,7 +892,7 @@ function renderChart(type, d, opts, blockId) {
   }
 }
 
-export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart, liveWidth, liveHeight, isPreviewMode = false }) {
+export default function CanvasBlock({ block, data, selected, onRemove, onDuplicate, onSelect, onUpdateBlock, onDragStart, liveWidth, liveHeight, responsiveMode = 'desktop', isPreviewMode = false }) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -907,6 +907,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const defaultH = isStatBlock ? 192 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 384
   const currentW = liveWidth || block.props?.width || defaultW
   const currentH = liveHeight || block.props?.height || defaultH
+  const layoutKey = `${isPreviewMode ? 'preview' : responsiveMode}-${Math.round(currentW)}x${Math.round(currentH)}`
   const scaleX = Math.max(0.85, Math.min(2.5, currentW / defaultW))
   const scaleY = Math.max(0.85, Math.min(2.5, currentH / defaultH))
   const scale = Math.sqrt(scaleX * scaleY)
@@ -1031,12 +1032,14 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
         </div>
       </div>
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>
-        {isStatBlock
-          ? renderStatBlock(block.type, data, props)
-          : String(block.type || '').startsWith('layout-')
-            ? renderLayoutBlock(block.type, props)
-            : renderChart(block.type, liveData, props, block.id)
-        }
+        <div className="card-body-content" key={layoutKey}>
+          {isStatBlock
+            ? renderStatBlock(block.type, data, props)
+            : String(block.type || '').startsWith('layout-')
+              ? renderLayoutBlock(block.type, props)
+              : renderChart(block.type, liveData, props, block.id, layoutKey)
+          }
+        </div>
         {editing && !isStatBlock && !isPreviewMode && (
           <DataEditor
             block={block}
