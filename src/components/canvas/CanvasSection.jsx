@@ -99,7 +99,7 @@ function buildResponsiveLayout(blocks, canvasWidth, responsiveMode) {
   const previewMinWidth = responsiveMode === 'mobile' ? 280 : 704
   const layoutWidth = Math.max(canvasWidth, previewMinWidth)
   const usableWidth = Math.max(240, layoutWidth - (padding * 2))
-  const columns = responsiveMode === 'mobile' || usableWidth < 840 ? 1 : 2
+  const columns = responsiveMode === 'mobile' ? 1 : 2
   const columnWidth = Math.floor((usableWidth - (gap * (columns - 1))) / columns)
   const heights = Array.from({ length: columns }, () => padding)
   const rects = {}
