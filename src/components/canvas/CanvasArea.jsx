@@ -633,6 +633,7 @@ export default function CanvasArea({
                         key={`${section.id}-${responsiveMode}`}
                         section={section}
                         data={filteredData}
+                        sourceData={data}
                         selectedId={null}
                         onSelect={undefined}
                         onUpdateBlock={onUpdateBlock}
@@ -674,7 +675,8 @@ export default function CanvasArea({
                                key={`${section.id}-${responsiveMode}`}
                                section={section}
                                data={filteredData}
-                              selectedId={selectedId}
+                               sourceData={data}
+                               selectedId={selectedId}
                                 onSelect={onSelect}
                                 onUpdateBlock={onUpdateBlock}
                                 onRemoveBlock={onRemoveBlock}

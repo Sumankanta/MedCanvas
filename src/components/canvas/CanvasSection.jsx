@@ -369,8 +369,26 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
   )
 })
 
+function shouldUseDateFilteredData(type) {
+  if (type?.startsWith('stat-') || type === 'kpi-card' || type === 'num') return true
+  return [
+    'chart-bar',
+    'chart-line',
+    'chart-area',
+    'chart-stacked',
+    'chart-combo',
+    'chart-stackedarea',
+    'chart-sparkline',
+    'chart-heatmap',
+    'table',
+    'advanced-table',
+    'pivot-table',
+  ].includes(type)
+}
+
 export default function CanvasSection({
   section, data, selectedId,
+  sourceData,
   onSelect, onUpdateBlock, onRemoveBlock, onDuplicateBlock,
   onUpdateSection, onRemoveSection,
   onAddBlockToSection,
@@ -603,8 +621,9 @@ export default function CanvasSection({
               }}
               onClick={(e) => { if (!isPreviewMode && e.target === e.currentTarget) onSelect?.(null) }}
             >
-              {blocks.map((block) => (
-                (() => {
+                {blocks.map((block) => (
+                  (() => {
+                  const blockData = shouldUseDateFilteredData(block.type) ? data : (sourceData || data)
                   const displayRect = responsiveLayout?.rects?.[block.id]
                   const otherRects = blocks
                     .filter((b) => b.id !== block.id)
@@ -622,7 +641,7 @@ export default function CanvasSection({
                   <BlockItem
                   key={block.id}
                   block={block}
-                  data={data}
+                  data={blockData}
                   selected={selectedId === block.id}
                   onSelect={onSelect}
                   onRemove={() => onRemoveBlock(block.id)}

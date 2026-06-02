@@ -142,6 +142,50 @@ function findFreeSpot(existingBlocks, type) {
   return { x: padding, y: maxY + gap }
 }
 
+function findDuplicateSpot(existingBlocks, originalBlock) {
+  const canvasWidth = 1120
+  const padding = 16
+  const gap = 24
+  const originalSize = defaultBlockSize(originalBlock.type)
+  const originalX = Number(originalBlock.props?.x ?? padding)
+  const originalY = Number(originalBlock.props?.y ?? padding)
+  const originalW = Number(originalBlock.props?.width ?? originalSize.width)
+  const originalH = Number(originalBlock.props?.height ?? originalSize.height)
+
+  const occupied = existingBlocks.map((b) => {
+    const s = defaultBlockSize(b.type)
+    return {
+      x: Number(b.props?.x ?? padding),
+      y: Number(b.props?.y ?? padding),
+      width: Number(b.props?.width ?? s.width),
+      height: Number(b.props?.height ?? s.height),
+    }
+  })
+
+  const preferred = [
+    { x: originalX + originalW + gap, y: originalY },
+    { x: originalX, y: originalY + originalH + gap },
+    { x: padding, y: originalY },
+  ]
+
+  for (const spot of preferred) {
+    const w = Math.max(180, originalW)
+    const h = Math.max(120, originalH)
+    const candidate = {
+      x: Math.max(padding, Math.round(spot.x)),
+      y: Math.max(padding, Math.round(spot.y)),
+      width: w,
+      height: h,
+    }
+
+    if (candidate.x + candidate.width > canvasWidth - padding) continue
+    const hit = occupied.some((o) => overlaps(candidate, o))
+    if (!hit) return { x: candidate.x, y: candidate.y }
+  }
+
+  return findFreeSpot(existingBlocks, originalBlock.type)
+}
+
 function makeSection(title = '', blockType = null) {
   const firstBlock = blockType ? makeBlock(blockType) : null
   return {
@@ -509,6 +553,7 @@ export default function App() {
 
   const duplicateBlock = useCallback((blockId, sectionId) => {
     setDashboardState((prev) => {
+      let clonedBlockId = null
       const nextSections = prev.sections.map((s) => {
         if (sectionId && s.id !== sectionId) return s
         const blocks = s.blocks || []
@@ -516,16 +561,25 @@ export default function App() {
         if (idx === -1) return s
         const original = blocks[idx]
         const newId = nextBlockId()
+        const originalW = Number(original.props?.width ?? defaultBlockSize(original.type).width)
+        const originalH = Number(original.props?.height ?? defaultBlockSize(original.type).height)
+        const duplicateSpot = {
+          x: Math.max(16, Math.round(Number(original.props?.x ?? 16) + 14)),
+          y: Math.max(16, Math.round(Number(original.props?.y ?? 16) + 14)),
+        }
+        const maxX = Math.max(16, 1120 - originalW - 16)
+        const maxY = Math.max(16, 3000 - originalH - 16)
         const clone = {
           ...original,
           id: newId,
           props: { 
             ...DEFAULT_BLOCK_PROPS, 
             ...original.props,
-            x: (Number(original.props?.x) || 0) + 24,
-            y: (Number(original.props?.y) || 0) + 24,
+            x: Math.min(duplicateSpot.x, maxX),
+            y: Math.min(duplicateSpot.y, maxY),
           },
         }
+        clonedBlockId = newId
         const newColSpanMap = { ...s.colSpanMap }
         if (newColSpanMap[blockId]) {
           newColSpanMap[newId] = { ...newColSpanMap[blockId] }
@@ -545,6 +599,9 @@ export default function App() {
         index: nextHistory.length - 1,
       }
     })
+    if (clonedBlockId) {
+      setTimeout(() => setSelectedId(clonedBlockId), 0)
+    }
   }, [])
 
   /**
