@@ -11,6 +11,74 @@ import { useDashboardData } from './hooks/useDashboardData'
 let blockCounter = 0
 let sectionCounter = 0
 const STORAGE_KEY = 'medical_dashboard_layout_v8'
+const SETTINGS_STORAGE_KEY = 'medical_dashboard_settings_v1'
+
+const DEFAULT_SETTINGS = {
+  themeMode: 'light',
+  scheduleEnabled: false,
+  scheduleMode: 'sunset',
+  scheduleLightTime: '06:00',
+  scheduleDarkTime: '22:00',
+  accentColor: '#1570ef',
+  fontScale: 100,
+  highContrast: false,
+  screenReader: false,
+  dashboardLayout: 'comfortable',
+  defaultLandingPage: 'builder',
+  showCharts: true,
+  showStats: true,
+  showTables: true,
+  gridDensity: 'normal',
+  autoRefreshInterval: 0,
+  notificationsEnabled: true,
+  reportFormat: 'pdf',
+  includePatientData: true,
+  language: 'en',
+  timeZone: 'Asia/Kolkata',
+  dateTimeFormat: 'dd-mm-yyyy',
+  profileName: 'SK',
+  profileEmail: 'user@phc.local',
+  twoFactorEnabled: false,
+}
+
+function timeToMinutes(time) {
+  const [hours, minutes] = String(time || '').split(':').map(Number)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 0
+  return (hours * 60) + minutes
+}
+
+function getScheduledTheme(settings, date = new Date()) {
+  const now = (date.getHours() * 60) + date.getMinutes()
+  const lightStart = settings.scheduleMode === 'custom'
+    ? timeToMinutes(settings.scheduleLightTime)
+    : timeToMinutes('06:00')
+  const darkStart = settings.scheduleMode === 'custom'
+    ? timeToMinutes(settings.scheduleDarkTime)
+    : timeToMinutes('18:00')
+
+  if (lightStart === darkStart) return 'light'
+  if (lightStart < darkStart) {
+    return now >= lightStart && now < darkStart ? 'light' : 'dark'
+  }
+  return now >= lightStart || now < darkStart ? 'light' : 'dark'
+}
+
+function loadSettings() {
+  if (typeof window === 'undefined') return DEFAULT_SETTINGS
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    if (!raw) return DEFAULT_SETTINGS
+    const parsed = JSON.parse(raw)
+    if (parsed?.themeMode === 'auto') parsed.themeMode = 'scheduled'
+    const merged = { ...DEFAULT_SETTINGS, ...parsed }
+    if (merged.themeMode === 'scheduled' && parsed.scheduleEnabled === undefined) {
+      merged.scheduleEnabled = true
+    }
+    return merged
+  } catch {
+    return DEFAULT_SETTINGS
+  }
+}
 
 function getResponsiveMode() {
   if (typeof window === 'undefined') return 'desktop'
@@ -50,6 +118,7 @@ const DEFAULT_BLOCK_PROPS = {
   showDots: true,
   pieLabel: false,
   fontSize: 11,
+  headingFontSize: 11,
   chartScale: 100,
   fontFamily: 'Plus Jakarta Sans',
   fontWeight: 'Regular (400)',
@@ -316,10 +385,17 @@ export default function App() {
   const [showDraftBadge, setShowDraftBadge] = useState(true)
   const [browserMode, setBrowserMode] = useState(getResponsiveMode)
   const [previewMode, setPreviewMode] = useState(null)
+  const [settings, setSettings] = useState(loadSettings)
+  const [autoThemeTick, setAutoThemeTick] = useState(() => Date.now())
   const rootRef = useRef(null)
 
   const { sections, history, index, title, subtitle } = dashboardState
   const responsiveMode = previewMode || browserMode
+  const effectiveTheme = settings.themeMode === 'scheduled'
+    ? settings.scheduleEnabled
+      ? getScheduledTheme(settings, new Date(autoThemeTick))
+      : 'light'
+    : settings.themeMode
 
   useEffect(() => {
     const handleResize = () => {
@@ -339,6 +415,49 @@ export default function App() {
   useEffect(() => {
     setShowDraftBadge(true)
   }, [dashboardState])
+
+  useEffect(() => {
+    if (selectedId && !isPreviewMode) {
+      setRightOpen(true)
+    }
+  }, [isPreviewMode, selectedId])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = effectiveTheme
+    root.dataset.themeMode = settings.themeMode
+    root.dataset.layoutDensity = settings.dashboardLayout
+    root.dataset.gridDensity = settings.gridDensity
+    root.dataset.highContrast = settings.highContrast ? 'true' : 'false'
+    root.dataset.screenReader = settings.screenReader ? 'true' : 'false'
+    root.classList.toggle('dark', effectiveTheme === 'dark')
+    root.style.setProperty('--app-font-scale', `${settings.fontScale / 100}`)
+    root.style.setProperty('--accent-color', settings.accentColor)
+    root.style.setProperty('--accent-soft', `${settings.accentColor}18`)
+    root.style.setProperty('--accent-border', `${settings.accentColor}52`)
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+    } catch {
+      // ignore storage failures
+    }
+  }, [effectiveTheme, settings])
+
+  useEffect(() => {
+    if (settings.themeMode !== 'scheduled' || !settings.scheduleEnabled) return undefined
+    const interval = window.setInterval(() => setAutoThemeTick(Date.now()), 60_000)
+    return () => window.clearInterval(interval)
+  }, [settings.scheduleEnabled, settings.themeMode])
+
+  useEffect(() => {
+    const minutes = Number(settings.autoRefreshInterval)
+    if (!minutes) return undefined
+    const interval = window.setInterval(() => refetch?.(), minutes * 60_000)
+    return () => window.clearInterval(interval)
+  }, [refetch, settings.autoRefreshInterval])
+
+  const updateSettings = useCallback((patch) => {
+    setSettings((prev) => ({ ...prev, ...patch }))
+  }, [])
 
   const handleResponsiveModeChange = useCallback((mode) => {
     setPreviewMode(mode)
@@ -801,7 +920,7 @@ export default function App() {
       const height = Math.ceil(target.scrollHeight || target.clientHeight || 720)
 
       const canvas = await html2canvas(target, {
-        backgroundColor: '#020817',
+        backgroundColor: effectiveTheme === 'dark' ? '#020817' : '#ffffff',
         scale: Math.min(2, window.devicePixelRatio || 1.5),
         useCORS: true,
         width,
@@ -839,7 +958,32 @@ export default function App() {
       document.body.classList.remove('is-exporting')
       setIsExporting(false)
     }
-  }, [isExporting])
+  }, [effectiveTheme, isExporting])
+
+  const downloadPatientData = useCallback(() => {
+    const rows = data.patientTableData || []
+    const headers = ['Drive Name', 'Location', 'Date', 'Patients Screened', 'Positive Cases', 'Referred']
+    const csvRows = [
+      headers.join(','),
+      ...rows.map((row) => [
+        row.name,
+        row.location,
+        row.date,
+        row.screened,
+        row.positive,
+        row.referred,
+      ].map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')),
+    ]
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `patient-data-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, [data.patientTableData])
 
   // ── Keyboard ───────────────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e) => {
@@ -899,6 +1043,11 @@ export default function App() {
         onSaveDraft={saveDraft}
         onExport={exportDashboard}
         isExporting={isExporting}
+        settings={settings}
+        effectiveTheme={effectiveTheme}
+        onSettingsChange={updateSettings}
+        onRefreshData={refetch}
+        onDownloadPatientData={downloadPatientData}
       />
 
       <div className={`workspace${(leftOpen && !isPreviewMode) ? '' : ' left-hidden'}${(rightOpen && !isPreviewMode) ? '' : ' right-hidden'}`}>

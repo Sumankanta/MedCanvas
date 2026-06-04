@@ -86,6 +86,12 @@ function toWeight(weight) {
   return 400
 }
 
+function scaledFontSize(baseSize, scale, min, max) {
+  const parsed = Number(baseSize)
+  const normalized = Number.isFinite(parsed) ? parsed : 11
+  return Math.round(clamp(normalized * scale, min, max))
+}
+
 function pickOrDefault(options, value) {
   if (!options || options.length === 0) return ''
   return options.includes(value) ? value : options[0]
@@ -903,13 +909,13 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const cardVariant = isStatBlock ? 'stat' : isTableBlock ? 'table' : isLayoutBlock ? 'layout' : 'chart'
   const base = CFG[block.type] || { title: 'Widget', subtitle: '', color: '#64748b' }
 
-  const defaultW = isStatBlock ? 312 : isLayoutBlock ? 360 : 360
-  const defaultH = isStatBlock ? 192 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 384
+  const defaultW = isStatBlock ? 288 : isLayoutBlock ? 360 : 360
+  const defaultH = isStatBlock ? 160 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 300
   const currentW = liveWidth || block.props?.width || defaultW
   const currentH = liveHeight || block.props?.height || defaultH
   const layoutKey = `${isPreviewMode ? 'preview' : responsiveMode}-${Math.round(currentW)}x${Math.round(currentH)}`
-  const scaleX = Math.max(0.85, Math.min(2.5, currentW / defaultW))
-  const scaleY = Math.max(0.85, Math.min(2.5, currentH / defaultH))
+  const scaleX = Math.max(0.55, Math.min(3, currentW / defaultW))
+  const scaleY = Math.max(0.55, Math.min(3, currentH / defaultH))
   const scale = Math.sqrt(scaleX * scaleY)
 
   const liveData = useMemo(() => (
@@ -928,7 +934,8 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     showGrid: block.props?.showGrid ?? true,
     showDots: block.props?.showDots ?? true,
     pieLabel: block.props?.pieLabel ?? false,
-    fontSize: Math.round(Number(block.props?.fontSize ?? 11) * scale),
+    fontSize: scaledFontSize(block.props?.fontSize ?? 11, scale, 8, 42),
+    headingFontSize: scaledFontSize(block.props?.headingFontSize ?? block.props?.fontSize ?? 11, scale, 8, 72),
     chartScale: Number(block.props?.chartScale ?? 100),
     fontFamily: block.props?.fontFamily || 'Plus Jakarta Sans',
     fontWeight: toWeight(block.props?.fontWeight || 'Regular (400)'),
@@ -980,12 +987,12 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
             </div>
           )}
           <div>
-            <div className="card-title-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="card-title" style={{ fontSize: props.fontSize, fontWeight: 600, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="card-title-row" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <span className="card-title" style={{ fontSize: props.headingFontSize, fontWeight: 600, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.18, overflowWrap: 'anywhere' }}>
                 {props.title}
               </span>
             </div>
-            {props.subtitle && <p className="card-subtitle" style={{ fontSize: Math.max(9, props.fontSize - 1), margin: 0, color: '#64748b' }}>{props.subtitle}</p>}
+            {props.subtitle && <p className="card-subtitle" style={{ fontSize: scaledFontSize(Math.max(9, Number(block.props?.headingFontSize ?? block.props?.fontSize ?? 11) - 1), scale, 8, 56), margin: 0, color: '#64748b', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{props.subtitle}</p>}
           </div>
         </div>
         <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>

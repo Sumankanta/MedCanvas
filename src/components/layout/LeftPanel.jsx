@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Hash, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Hash, Minus, Plus, Trash2 } from 'lucide-react'
 
 const CHART_COLORS = [
   '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
@@ -76,7 +76,7 @@ const DEFAULT_PROPS = {
   title: '', subtitle: '',
   color: '#06b6d4', colSpan: 1, width: 360, height: 420,
   showLegend: true, showGrid: true, showDots: true, pieLabel: false,
-  fontSize: 11, chartScale: 100, radius: 15, opacity: 100,
+  fontSize: 11, headingFontSize: 11, chartScale: 100, radius: 15, opacity: 100,
   fontFamily: 'Plus Jakarta Sans', fontWeight: 'Regular (400)',
   xKey: '', yKey: '', yKey2: '', extraYKeys: [],
   extraYColors: [], extraYLabels: [],
@@ -162,6 +162,46 @@ export default function LeftPanel({
     return Math.max(min, Math.min(max, parsed))
   }
 
+  const updateHeadingFontSize = (value) => {
+    handleUpdate({ headingFontSize: clampNumber(value, 6, 72, props.headingFontSize || props.fontSize || 11) })
+  }
+
+  const headingFontSizeControl = isChart ? (
+    <div className="wp-section wp-section--chart-heading" style={{ borderBottomColor: '#f2f4f7' }}>
+      <div className="wp-label">Chart Heading</div>
+      <div className="wp-control-help">Heading Font Size</div>
+      <div className="wp-stepper">
+        <button
+          type="button"
+          onClick={() => updateHeadingFontSize((props.headingFontSize || props.fontSize || 11) - 1)}
+          aria-label="Decrease chart heading font size"
+          title="Decrease heading font size"
+          className="wp-stepper-btn"
+        >
+          <Minus size={13} />
+        </button>
+        <input
+          type="number"
+          className="wp-input"
+          min="6"
+          max="72"
+          value={props.headingFontSize || props.fontSize || 11}
+          onChange={(e) => updateHeadingFontSize(e.target.value)}
+          aria-label="Chart heading font size"
+        />
+        <button
+          type="button"
+          onClick={() => updateHeadingFontSize((props.headingFontSize || props.fontSize || 11) + 1)}
+          aria-label="Increase chart heading font size"
+          title="Increase heading font size"
+          className="wp-stepper-btn"
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+    </div>
+  ) : null
+
   return (
     <aside className={`${side}-panel properties-panel${open ? '' : ' collapsed'}`}>
       <div className="panel-header">
@@ -205,6 +245,8 @@ export default function LeftPanel({
             placeholder="Widget subtitle"
           />
         </div>
+
+        {headingFontSizeControl}
 
         {/* Primary Color */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
@@ -264,6 +306,7 @@ export default function LeftPanel({
                 onChange={(e) => handleUpdate({ fontSize: Math.max(1, parseInt(e.target.value) || 11) })}
               />
             </div>
+            {!isChart && (
             <div>
               <div className="wp-label">Border Radius</div>
               <input
@@ -273,7 +316,19 @@ export default function LeftPanel({
                 onChange={(e) => handleUpdate({ radius: Math.max(0, parseInt(e.target.value) || 0) })}
               />
             </div>
+            )}
           </div>
+          {isChart && (
+            <div style={{ marginTop: 10 }}>
+              <div className="wp-label">Border Radius</div>
+              <input
+                 type="number"
+                className="wp-input"
+                value={props.radius || 15}
+                onChange={(e) => handleUpdate({ radius: Math.max(0, parseInt(e.target.value) || 0) })}
+              />
+            </div>
+          )}
         </div>
 
         <Section title="Layout" defaultOpen>

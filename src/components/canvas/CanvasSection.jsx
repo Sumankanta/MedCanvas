@@ -214,6 +214,12 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       const nextX = clamp(snappedX, 0, Math.max(0, rect.width / zoomScale - w))
       const nextY = clamp(snappedY, 0, 3000)
       const placed = resolveNoOverlap({ x: Math.round(nextX), y: Math.round(nextY), w, h }, otherRects)
+      const nextRect = {
+        ...liveRectRef.current,
+        x: placed.x,
+        y: placed.y,
+      }
+      liveRectRef.current = nextRect
       setLiveRect((prev) => ({
         ...prev,
         x: placed.x,
@@ -255,6 +261,13 @@ const BlockItem = memo(function BlockItem({ block, data, selected, onSelect, onR
       const nextW = clamp(snappedW, minWidthForType(block.type), 1200)
       const nextH = clamp(snappedH, minHeightForType(block.type), 1000)
       const placed = resolveNoOverlap({ x, y, w: Math.round(nextW), h: Math.round(nextH) }, otherRects)
+      const nextRect = {
+        ...liveRectRef.current,
+        w: placed.w,
+        h: placed.h,
+        y: placed.y,
+      }
+      liveRectRef.current = nextRect
       setLiveRect((prev) => ({
         ...prev,
         w: placed.w,
