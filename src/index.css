@@ -1357,15 +1357,28 @@ svg {
   padding: 4px 8px 8px;
 }
 
+.canvas-card--stat {
+  background: #fff;
+  border-color: #cfd4dc;
+  box-shadow: none;
+  border-radius: 8px;
+}
+
 .canvas-card--stat .card-header {
-  height: 54px;
-  padding: 8px 12px 4px;
+  height: auto;
+  padding: 8px 10px 0;
+  border-bottom: 0;
 }
 
 .canvas-card--stat .card-body {
-  height: calc(100% - 54px);
   min-height: 0;
-  padding: 6px 10px 8px;
+  padding: 0 8px 12px 10px;
+}
+
+.canvas-card--stat .card-title {
+  font-size: 12px;
+  line-height: 1.12;
+  white-space: nowrap;
 }
 
 .canvas-card--layout .card-header {
@@ -1384,6 +1397,11 @@ svg {
 
 .card-accent {
   height: 2px;
+  display: block;
+}
+
+.canvas-card--stat .card-accent {
+  display: none;
 }
 
 .card-header {
@@ -1423,6 +1441,127 @@ svg {
   display: inline-flex;
   align-items: flex-start;
   gap: 4px;
+}
+
+.card-header--stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-block-render {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+}
+
+.stat-card-shell {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-block-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-drag-handle {
+  color: #b7bcc5;
+}
+
+.stat-toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-action-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+}
+
+.stat-action-btn:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.sb-label-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.sb-label {
+  color: #111827;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sb-top {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  min-width: 0;
+}
+
+.sb-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.sb-value-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 4px;
+}
+
+.sb-value {
+  color: #111827;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.sb-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.sb-comparison {
+  color: #9ca3af;
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .card-action-btn {

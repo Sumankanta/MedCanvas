@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
   ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts'
-import { Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical, Trash } from 'lucide-react'
+import {
+  Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical, Trash,
+  Users, FlaskConical, ClipboardList, UserRound,
+} from 'lucide-react'
 
 const BASE_COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#f97316', '#a78bfa']
 const TOOLTIP_PROPS = {
@@ -25,14 +28,14 @@ function chartDot(color, chartScale) {
 }
 
 const STAT_META = {
-  'kpi-card': { dataKey: 'totalScreened', label: 'KPI Card', icon: 'KPI', defaultColor: '#3b82f6', trend: +12.3 },
-  'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: '👥', defaultColor: '#3b82f6', trend: +12.3 },
-  'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: '🩺', defaultColor: '#ef4444', trend: +15.3 },
-  'stat-normal': { dataKey: 'normal', label: 'Normal / Clear', icon: '✅', defaultColor: '#10b981', trend: +12 },
-  'stat-oral': { dataKey: 'oralCancer', label: 'Oral Cancer +ve', icon: '🦷', defaultColor: '#f97316', trend: -2 },
-  'stat-anemia': { dataKey: 'anemia', label: 'Anemia +ve', icon: '💉', defaultColor: '#ec4899', trend: +5 },
-  'stat-locations': { dataKey: 'locations', label: 'Referred', icon: '📍', defaultColor: '#8b5cf6', trend: +5.1 },
-  'stat-tests': { dataKey: 'testsTotal', label: 'Tests Conducted', icon: '🔬', defaultColor: '#f59e0b', trend: +8.7 },
+  'kpi-card': { dataKey: 'totalScreened', label: 'KPI Card', icon: Users, defaultColor: '#3b82f6', trend: +12.3 },
+  'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: Users, defaultColor: '#3b82f6', trend: +12.3 },
+  'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: ClipboardList, defaultColor: '#ef4444', trend: +15.3 },
+  'stat-normal': { dataKey: 'normal', label: 'Normal / Clear', icon: UserRound, defaultColor: '#10b981', trend: +12 },
+  'stat-oral': { dataKey: 'oralCancer', label: 'Oral Cancer +ve', icon: FlaskConical, defaultColor: '#f97316', trend: -2 },
+  'stat-anemia': { dataKey: 'anemia', label: 'Anemia +ve', icon: ClipboardList, defaultColor: '#ec4899', trend: +5 },
+  'stat-locations': { dataKey: 'locations', label: 'Referred', icon: UserRound, defaultColor: '#8b5cf6', trend: +8.1 },
+  'stat-tests': { dataKey: 'testsTotal', label: 'Tests Conducted', icon: FlaskConical, defaultColor: '#f59e0b', trend: +12.7 },
 }
 
 const CFG = {
@@ -135,27 +138,25 @@ function renderStatBlock(type, data, props) {
   const color = props.color || meta.defaultColor
   const trend = meta.trend
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
-  const trendColor = trend > 0 ? '#10b981' : trend < 0 ? '#ef4444' : '#64748b'
+  const trendColor = type === 'stat-positive' || trend < 0 ? '#dc2626' : '#16a34a'
+  const Icon = meta.icon
+  const displayValue = props.metricValue || value.toLocaleString()
+  const comparisonLabel = props.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'
+  const valueDelta = props.metricDelta || `${trend > 0 ? '\u25B2' : '\u25BC'} ${Math.abs(trend)}%`
 
   return (
     <div className="stat-block-render" style={{ '--sb-color': color }}>
       <div className="sb-top">
-        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28` }}>
-          <span className="sb-emoji">{meta.icon}</span>
+        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28`, color }}>
+          <Icon size={18} strokeWidth={2.1} />
         </div>
         <div className="sb-value-wrap">
-          <span className="sb-value" style={{ color: '#1e293b', fontSize: Math.max(26, props.fontSize + 18), fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, lineHeight: 1 }}>
-            {value.toLocaleString()}
-          </span>
+          <span className="sb-value">{displayValue}</span>
           <div className="sb-trend" style={{ color: trendColor }}>
-            <TrendIcon size={11} />
-            <span style={{ fontSize: 10, fontWeight: 600 }}>
-              {trend === 0 ? 'No change' : `${trend > 0 ? '▲' : '▼'} ${Math.abs(trend)}%`}
-            </span>
+            <TrendIcon size={11} strokeWidth={2.5} />
+            <span>{valueDelta}</span>
           </div>
-          <span style={{ fontSize: 9, color: '#94a3b8', marginTop: 1 }}>
-            vs Apr 1 – Apr 30, 2025
-          </span>
+          <span className="sb-comparison">{comparisonLabel}</span>
         </div>
       </div>
     </div>
@@ -261,7 +262,7 @@ function initData(type, data) {
   }
 }
 
-// ── renderChart now accepts extraYColors + extraYLabels ──────────────────────
+// â”€â”€ renderChart now accepts extraYColors + extraYLabels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderLayoutBlock(type, opts) {
   switch (type) {
     case 'layout-text':
@@ -418,7 +419,7 @@ function renderHeatMapChart(d) {
     return (
       <div className="heatmap-chart heatmap-chart--empty">
         <div className="chart-empty-state">
-          <div className="chart-empty-state__icon">🔥</div>
+          <div className="chart-empty-state__icon">ðŸ”¥</div>
           <div className="chart-empty-state__title">No calendar data</div>
           <div className="chart-empty-state__text">Add dated entries to see the heat map.</div>
         </div>
@@ -494,7 +495,7 @@ function renderChart(type, d, opts, blockId, layoutKey) {
   if (!Array.isArray(d) || d.length === 0) {
     return (
       <div className="chart-empty-state">
-        <div className="chart-empty-state__icon">📊</div>
+        <div className="chart-empty-state__icon">ðŸ“Š</div>
         <div className="chart-empty-state__title">No data available</div>
         <div className="chart-empty-state__text">Try a different date range or add chart data.</div>
       </div>
@@ -875,7 +876,7 @@ function renderChart(type, d, opts, blockId, layoutKey) {
                   <td>{p.screened?.toLocaleString()}</td>
                   <td>{p.positive}</td>
                   <td>{p.referred}</td>
-                  <td><span style={{ cursor: 'pointer', color: '#64748b' }}>👁</span></td>
+                  <td><span style={{ cursor: 'pointer', color: '#64748b' }}>ðŸ‘</span></td>
                 </tr>
               ))}
             </tbody>
@@ -886,7 +887,7 @@ function renderChart(type, d, opts, blockId, layoutKey) {
               {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
                 <button key={i} className={`pt-page-btn${i === 0 ? ' active' : ''}`}>{i + 1}</button>
               ))}
-              {totalPages > 3 && <span className="pt-page-btn">›</span>}
+              {totalPages > 3 && <span className="pt-page-btn">â€º</span>}
             </div>
           </div>
         </div>
@@ -909,8 +910,8 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const cardVariant = isStatBlock ? 'stat' : isTableBlock ? 'table' : isLayoutBlock ? 'layout' : 'chart'
   const base = CFG[block.type] || { title: 'Widget', subtitle: '', color: '#64748b' }
 
-  const defaultW = isStatBlock ? 288 : isLayoutBlock ? 360 : 360
-  const defaultH = isStatBlock ? 160 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 300
+  const defaultW = isStatBlock ? 194 : isLayoutBlock ? 360 : 360
+  const defaultH = isStatBlock ? 120 : block.type === 'layout-text' ? 140 : block.type === 'layout-image' ? 220 : block.type === 'layout-divider' ? 72 : block.type === 'layout-spacer' ? 120 : isLayoutBlock ? 180 : 300
   const currentW = liveWidth || block.props?.width || defaultW
   const currentH = liveHeight || block.props?.height || defaultH
   const layoutKey = `${isPreviewMode ? 'preview' : responsiveMode}-${Math.round(currentW)}x${Math.round(currentH)}`
@@ -956,6 +957,9 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     imageAlt: block.props?.imageAlt || 'Image placeholder',
     imageSrc: block.props?.imageSrc || '',
     dividerLabel: block.props?.dividerLabel || '',
+    metricValue: block.props?.metricValue || '',
+    metricDelta: block.props?.metricDelta || '',
+    comparisonLabel: block.props?.comparisonLabel || '',
   }), [block.props, base.color, base.subtitle, base.title, scale])
 
   return (
@@ -967,11 +971,13 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
         borderRadius: props.radius,
         fontFamily: props.fontFamily,
         overflow: menuOpen ? 'visible' : 'hidden',
-        boxShadow: selected
-          ? `0 0 0 2px ${props.color}, var(--shadow-lg)`
-          : hovered ? 'var(--shadow-lg)' : 'var(--shadow-md)',
+        boxShadow: isStatBlock
+          ? 'none'
+          : selected
+            ? `0 0 0 2px ${props.color}, var(--shadow-lg)`
+            : hovered ? 'var(--shadow-lg)' : 'var(--shadow-md)',
         borderColor: selected
-          ? props.color
+          ? (isStatBlock ? '#d0d7de' : props.color)
           : hovered ? `${props.color}88` : `${props.color}44`,
       }}
       onMouseEnter={() => setHovered(true)}
@@ -996,6 +1002,11 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
           </div>
         </div>
         <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+          {!isPreviewMode && isStatBlock && (
+            <button className="card-action-btn edit" onClick={(e) => e.stopPropagation()} title="Edit" style={{ background: 'transparent', border: '1px solid transparent', cursor: 'pointer', color: '#98a2b3', padding: '4px', display: 'flex' }}>
+              <Pencil size={13} />
+            </button>
+          )}
           {!isPreviewMode && (
             <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
               <MoreVertical size={13} />
@@ -1040,12 +1051,11 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       </div>
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>
         <div className="card-body-content" key={layoutKey}>
-          {isStatBlock
-            ? renderStatBlock(block.type, data, props)
-            : String(block.type || '').startsWith('layout-')
-              ? renderLayoutBlock(block.type, props)
-              : renderChart(block.type, liveData, props, block.id, layoutKey)
-          }
+          {isStatBlock ? (
+            renderStatBlock(block.type, data, props)
+          ) : String(block.type || '').startsWith('layout-')
+            ? renderLayoutBlock(block.type, props)
+            : renderChart(block.type, liveData, props, block.id, layoutKey)}
         </div>
         {editing && !isStatBlock && !isPreviewMode && (
           <DataEditor
@@ -1062,3 +1072,4 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     </div>
   )
 }
+

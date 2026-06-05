@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+﻿import { useState, useCallback, useEffect, useRef } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import TopBar from './components/layout/TopBar'
@@ -7,10 +7,10 @@ import CanvasArea from './components/canvas/CanvasArea'
 import RightPanel from './components/layout/RightPanel'
 import { useDashboardData } from './hooks/useDashboardData'
 
-// ── Counters ────────────────────────────────────────────────────────────────
+// â”€â”€ Counters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let blockCounter = 0
 let sectionCounter = 0
-const STORAGE_KEY = 'medical_dashboard_layout_v8'
+const STORAGE_KEY = 'medical_dashboard_layout_v9'
 const SETTINGS_STORAGE_KEY = 'medical_dashboard_settings_v1'
 
 const DEFAULT_SETTINGS = {
@@ -104,7 +104,7 @@ function syncCountersFromSections(sections) {
   blockCounter = blockNums.length ? Math.max(...blockNums) : 0
 }
 
-// ── Default props ────────────────────────────────────────────────────────────
+// â”€â”€ Default props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DEFAULT_BLOCK_PROPS = {
   title: '',
   subtitle: '',
@@ -153,8 +153,8 @@ function makeBlock(type) {
 }
 
 function defaultBlockSize(type) {
-  if (type === 'kpi-card') return { width: 288, height: 160 }
-  if (type?.startsWith('stat-')) return { width: 288, height: 160 }
+  if (type === 'kpi-card') return { width: 194, height: 120 }
+  if (type?.startsWith('stat-')) return { width: 194, height: 120 }
   if (type === 'table') return { width: 360, height: 300 }
   if (type === 'advanced-table') return { width: 380, height: 320 }
   if (type === 'pivot-table') return { width: 380, height: 320 }
@@ -267,7 +267,7 @@ function makeSection(title = '', blockType = null) {
 }
 
 function getDefaultDashboardState() {
-  const defaultSections = []
+  const defaultSections = createTemplateSections('starter')
   syncCountersFromSections(defaultSections)
   return {
     sections: defaultSections,
@@ -301,7 +301,7 @@ function createTemplateSections(templateId) {
   resetSectionCounter()
   blockCounter = 0
 
-  const chart = (type, x, y, width, height, title) => ({
+  const chart = (type, x, y, width, height, title, extraProps = {}) => ({
     id: nextBlockId(),
     type,
     props: {
@@ -311,6 +311,7 @@ function createTemplateSections(templateId) {
       y,
       width,
       height,
+      ...extraProps,
     },
   })
 
@@ -339,21 +340,33 @@ function createTemplateSections(templateId) {
     return [s1]
   }
 
-  const s1 = { id: nextSectionId(), title: 'Medical Drive Monitoring Dashboard', cols: 12, blocks: [], colSpanMap: {} }
+  const s1 = { id: nextSectionId(), title: 'Section 1', cols: 12, blocks: [], colSpanMap: {} }
   s1.blocks = [
-    chart('stat-total', 12, 12, 124, 96, 'Total Patients Screened'),
-    chart('stat-tests', 144, 12, 124, 96, 'Tests Conducted'),
-    chart('stat-positive', 276, 12, 124, 96, 'Positive Cases'),
-    chart('stat-locations', 408, 12, 124, 96, 'Referred'),
-    chart('chart-line', 12, 120, 256, 220, 'Patients Screened Over Time'),
-    chart('chart-donut', 276, 120, 256, 220, 'Screening Outcome Distribution'),
-    chart('table', 12, 352, 256, 230, 'Recent Screening Drives'),
-    chart('chart-hbar', 276, 352, 256, 230, 'Tests Conducted by Type'),
+    chart('stat-total', 12, 16, 194, 120, 'Total Patients Screened', {
+      metricValue: '2,568',
+      metricDelta: '▲ 15.6%',
+      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
+    }),
+    chart('stat-tests', 214, 16, 194, 120, 'Tests Conducted', {
+      metricValue: '4,231',
+      metricDelta: '▲ 12.7%',
+      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
+    }),
+    chart('stat-positive', 416, 16, 194, 120, 'Positive Cases', {
+      metricValue: '312',
+      metricDelta: '▼ 15.3%',
+      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
+    }),
+    chart('stat-locations', 618, 16, 194, 120, 'Referred', {
+      metricValue: '186',
+      metricDelta: '▲ 8.1%',
+      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
+    }),
   ]
   return [s1]
 }
 
-// ── Flat block lookup helpers ────────────────────────────────────────────────
+// â”€â”€ Flat block lookup helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function allBlocks(sections) {
   return sections.flatMap((s) => s.blocks || [])
 }
@@ -370,7 +383,7 @@ function findSectionForBlock(sections, blockId) {
   return sections.find((s) => (s.blocks || []).some((b) => b.id === blockId)) || null
 }
 
-// ── App ──────────────────────────────────────────────────────────────────────
+// â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function App() {
   const { data, loading, lastUpdated, refetch, isRefreshing } = useDashboardData()
 
@@ -490,7 +503,7 @@ export default function App() {
     }
   }, [dashboardState])
 
-  // ── History Helpers ────────────────────────────────────────────────────────
+  // â”€â”€ History Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const pushState = useCallback((newSections) => {
     setDashboardState((prev) => {
       const truncated = prev.history.slice(0, prev.index + 1)
@@ -528,7 +541,7 @@ export default function App() {
     })
   }, [])
 
-  // ── Section operations ─────────────────────────────────────────────────────
+  // â”€â”€ Section operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addSection = useCallback((blockType = null) => {
     const section = makeSection('', blockType)
     setDashboardState((prev) => {
@@ -606,7 +619,7 @@ export default function App() {
     })
   }, [])
 
-  // ── Block operations ───────────────────────────────────────────────────────
+  // â”€â”€ Block operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addBlockToSection = useCallback((sectionId, type, _colIndex = 0, initialPos = null) => {
     void _colIndex
     setDashboardState((prev) => {
@@ -875,7 +888,7 @@ export default function App() {
     });
   }, []);
 
-  // ── Clear ──────────────────────────────────────────────────────────────────
+  // â”€â”€ Clear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const clearCanvas = useCallback(() => {
     resetSectionCounter()
     blockCounter = 0
@@ -985,7 +998,7 @@ export default function App() {
     URL.revokeObjectURL(url)
   }, [data.patientTableData])
 
-  // ── Keyboard ───────────────────────────────────────────────────────────────
+  // â”€â”€ Keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleKeyDown = useCallback((e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo() }
     if ((e.metaKey || e.ctrlKey) && e.key === 'y') { e.preventDefault(); redo() }
@@ -993,7 +1006,7 @@ export default function App() {
     if (e.key === 'Escape') { setSelectedId(null) }
   }, [undo, redo, selectedId, removeBlock])
 
-  // ── Derived ────────────────────────────────────────────────────────────────
+  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const selectedBlock = selectedId ? findBlock(sections, selectedId) : null
   const selectedSection = selectedId ? findSectionForBlock(sections, selectedId) : null
   const selectedSectionCols = selectedSection?.cols ?? cols
@@ -1113,3 +1126,4 @@ export default function App() {
     </div>
   )
 }
+

@@ -10,25 +10,25 @@ function clamp(n, min, max) {
 }
 
 function defaultSize(type) {
-  if (type?.startsWith('stat-')) return { w: 288, h: 160 }
+  if (type?.startsWith('stat-')) return { w: 194, h: 120 }
   if (type === 'table') return { w: 360, h: 300 }
   return { w: 360, h: 300 }
 }
 
 function minWidthForType(type) {
-  if (type?.startsWith('stat-')) return 120
+  if (type?.startsWith('stat-')) return 140
   if (type === 'table') return 240
   return 220
 }
 
 function minHeightForType(type) {
-  if (type?.startsWith('stat-')) return 120
+  if (type?.startsWith('stat-')) return 100
   if (type === 'table') return 220
   return 220
 }
 
 function maxHeightForType(type) {
-  if (type?.startsWith('stat-')) return 180
+  if (type?.startsWith('stat-')) return 150
   if (type === 'table') return 340
   return 320
 }
