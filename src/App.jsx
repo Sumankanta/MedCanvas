@@ -7,7 +7,6 @@ import CanvasArea from './components/canvas/CanvasArea'
 import RightPanel from './components/layout/RightPanel'
 import { useDashboardData } from './hooks/useDashboardData'
 
-// â”€â”€ Counters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let blockCounter = 0
 let sectionCounter = 0
 const STORAGE_KEY = 'medical_dashboard_layout_v9'
@@ -266,22 +265,22 @@ function makeSection(title = '', blockType = null) {
   }
 }
 
-function getDefaultDashboardState() {
-  const defaultSections = createTemplateSections('starter')
+function getEmptyDashboardState() {
+  const defaultSections = []
   syncCountersFromSections(defaultSections)
   return {
     sections: defaultSections,
     history: [JSON.parse(JSON.stringify(defaultSections))],
     index: 0,
     title: 'Medical Drive Monitoring Dashboard',
-    subtitle: 'Real-time overview of screening drives and outcomes'
+    subtitle: 'Real-time overview of screening drives and outcomes',
   }
 }
 
 function loadDashboardState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return getDefaultDashboardState()
+    if (!raw) return getEmptyDashboardState()
     const parsed = JSON.parse(raw)
     const sections = Array.isArray(parsed?.sections) ? parsed.sections : []
     syncCountersFromSections(sections)
@@ -293,7 +292,7 @@ function loadDashboardState() {
       subtitle: parsed.subtitle || 'Real-time overview of screening drives and outcomes'
     }
   } catch {
-    return getDefaultDashboardState()
+    return getEmptyDashboardState()
   }
 }
 
