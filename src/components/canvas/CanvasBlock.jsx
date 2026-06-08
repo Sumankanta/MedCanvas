@@ -30,7 +30,7 @@ function chartDot(color, chartScale) {
 const STAT_META = {
   'kpi-card': { dataKey: 'totalScreened', label: 'KPI Card', icon: Users, defaultColor: '#3b82f6', trend: +12.3 },
   'stat-total': { dataKey: 'totalScreened', label: 'Total Patients Screened', icon: Users, defaultColor: '#3b82f6', trend: +12.3 },
-  'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: ClipboardList, defaultColor: '#ef4444', trend: +15.3 },
+  'stat-positive': { dataKey: 'oralCancer', label: 'Positive Cases', icon: ClipboardList, defaultColor: '#ef4444', trend: -15.3 },
   'stat-normal': { dataKey: 'normal', label: 'Normal / Clear', icon: UserRound, defaultColor: '#10b981', trend: +12 },
   'stat-oral': { dataKey: 'oralCancer', label: 'Oral Cancer +ve', icon: FlaskConical, defaultColor: '#f97316', trend: -2 },
   'stat-anemia': { dataKey: 'anemia', label: 'Anemia +ve', icon: ClipboardList, defaultColor: '#ec4899', trend: +5 },
@@ -95,6 +95,154 @@ function scaledFontSize(baseSize, scale, min, max) {
   return Math.round(clamp(normalized * scale, min, max))
 }
 
+function formatMetricValue(value, format = 'comma', suffix = '') {
+  const num = Number(value) || 0
+  let formatted = String(Math.round(num))
+
+  switch (format) {
+    case 'plain':
+      formatted = String(Math.round(num))
+      break
+    case 'decimal':
+      formatted = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(num)
+      break
+    case 'compact':
+      formatted = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(num)
+      break
+    case 'currency':
+      formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num)
+      break
+    case 'comma':
+    default:
+      formatted = new Intl.NumberFormat('en-US').format(num)
+      break
+  }
+
+  return suffix ? `${formatted} ${suffix}` : formatted
+}
+
+function formatComparisonValue(trend, format = 'percentage') {
+  const direction = trend > 0 ? '▲' : trend < 0 ? '▼' : '•'
+  const magnitude = Math.abs(Number(trend) || 0)
+  if (format === 'value') return `${direction} ${magnitude.toLocaleString('en-US')}`
+  if (format === 'both') return `${direction} ${magnitude.toFixed(1)}%`
+  return `${direction} ${magnitude.toFixed(1)}%`
+}
+
+function buildLegendItems(type, opts, xKey, yKey, yKey2, extraYKeys, extraYLabels, extraYColors, data) {
+  const items = []
+  const seen = new Set()
+  const addItem = (key, label, color) => {
+    if (!key || seen.has(key)) return
+    seen.add(key)
+    items.push({ key, label, color })
+  }
+
+  if (type === 'chart-pie' || type === 'chart-donut') {
+    const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
+    ;(Array.isArray(data) ? data : []).forEach((item, index) => {
+      const label = item.label || item.name || item[xKey] || `Item ${index + 1}`
+      const color = palette[index % palette.length]
+      addItem(`${label}-${index}`, label, color)
+    })
+    return items
+  }
+
+  addItem(yKey, yKey, opts.color)
+  addItem(yKey2, yKey2, opts.series2Color)
+  extraYKeys.forEach((key, index) => addItem(key, extraYLabels[index] || key, extraYColors[index]))
+  return items
+}
+
+function renderLegendBlock(items, position = 'bottom', chartFontSize = 11) {
+  if (!items.length) return null
+  const vertical = position === 'left' || position === 'right'
+  const isSide = position === 'left' || position === 'right'
+  const style = {
+    display: 'flex',
+    flexDirection: vertical ? 'column' : 'row',
+    flexWrap: vertical ? 'nowrap' : 'wrap',
+    alignItems: vertical ? 'flex-start' : 'center',
+    justifyContent: vertical ? 'center' : 'center',
+    gap: vertical ? 6 : 12,
+    padding: vertical ? '2px 0' : '2px 6px',
+    width: isSide ? 124 : '100%',
+    minWidth: isSide ? 112 : 'auto',
+    maxWidth: isSide ? 140 : '100%',
+    overflow: 'hidden',
+  }
+
+  return (
+    <div className={`chart-legend chart-legend--${position}`} style={style}>
+      {items.map((item) => (
+        <div key={item.key} className="chart-legend__item" style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 999, background: item.color, flexShrink: 0 }} />
+          <span style={{ fontSize: Math.max(9, chartFontSize - 1), color: '#475467', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {item.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function wrapChartWithLegend(chartNode, items, position = 'bottom', chartFontSize = 11) {
+  if (!items.length) return chartNode
+  const sideLegend = position === 'left' || position === 'right'
+
+  return (
+    <div
+      className={`chart-shell chart-shell--${position}`}
+      style={{
+        display: 'flex',
+        flexDirection: sideLegend ? 'row' : 'column',
+        alignItems: 'stretch',
+        justifyContent: 'stretch',
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        gap: sideLegend ? 10 : 6,
+        padding: '2px 2px 0',
+        overflow: 'hidden',
+      }}
+    >
+      {position === 'top' && renderLegendBlock(items, position, chartFontSize)}
+      {sideLegend && position === 'left' && renderLegendBlock(items, position, chartFontSize)}
+      <div className="chart-shell__plot" style={{ flex: 1, minWidth: 0, minHeight: 0, width: '100%', height: '100%' }}>
+        {chartNode}
+      </div>
+      {sideLegend && position === 'right' && renderLegendBlock(items, position, chartFontSize)}
+      {position === 'bottom' && renderLegendBlock(items, position, chartFontSize)}
+    </div>
+  )
+}
+
+function getChartMargin(type) {
+  switch (type) {
+    case 'chart-line':
+    case 'chart-area':
+    case 'chart-combo':
+    case 'chart-stackedarea':
+      return { top: 10, right: 10, left: 0, bottom: 18 }
+    case 'chart-sparkline':
+      return { top: 6, right: 6, left: 0, bottom: 4 }
+    case 'chart-bar':
+    case 'chart-stacked':
+    case 'chart-scatter':
+      return { top: 10, right: 10, left: 0, bottom: 10 }
+    case 'chart-hbar':
+      return { top: 8, right: 12, left: 12, bottom: 8 }
+    case 'chart-pie':
+    case 'chart-donut':
+    case 'chart-radar':
+    case 'chart-radialbar':
+      return { top: 6, right: 6, left: 6, bottom: 6 }
+    default:
+      return { top: 8, right: 8, left: 8, bottom: 8 }
+  }
+}
+
 function pickOrDefault(options, value) {
   if (!options || options.length === 0) return ''
   return options.includes(value) ? value : options[0]
@@ -133,30 +281,34 @@ function seriesOptions(type) {
 function renderStatBlock(type, data, props) {
   const meta = STAT_META[type] || STAT_META['stat-total']
   if (!meta) return null
-  const varEntry = data?.statVariables?.find((v) => v.key === meta.dataKey)
+  const metricKey = props.metricKey || meta.dataKey
+  const varEntry = data?.statVariables?.find((v) => v.key === metricKey) || data?.statVariables?.find((v) => v.key === meta.dataKey)
   const value = varEntry?.value ?? 0
-  const color = props.color || meta.defaultColor
+  const color = props.itemColor || props.color || meta.defaultColor
+  const iconColor = props.iconColor || color
   const trend = meta.trend
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
-  const trendColor = type === 'stat-positive' || trend < 0 ? '#dc2626' : '#16a34a'
+  const trendColor = type === 'stat-positive' || trend < 0 ? (props.decreaseColor || '#dc2626') : (props.increaseColor || '#16a34a')
   const Icon = meta.icon
-  const displayValue = props.metricValue || value.toLocaleString()
+  const useManualValue = !props.metricKey && props.metricValue
+  const displayValue = useManualValue ? props.metricValue : formatMetricValue(value, props.numberFormat || 'comma', props.suffix || '')
   const comparisonLabel = props.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'
-  const valueDelta = props.metricDelta || `${trend > 0 ? '\u25B2' : '\u25BC'} ${Math.abs(trend)}%`
-
+  const valueDelta = props.metricDelta || formatComparisonValue(trend, props.comparisonFormat || 'percentage')
   return (
     <div className="stat-block-render" style={{ '--sb-color': color }}>
       <div className="sb-top">
-        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28`, color }}>
-          <Icon size={18} strokeWidth={2.1} />
+        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28`, color: iconColor }}>
+          <Icon size={18} strokeWidth={2.1} color={iconColor} />
         </div>
         <div className="sb-value-wrap">
-          <span className="sb-value">{displayValue}</span>
+          <span className="sb-value" style={{ color: props.valueColor || '#111827' }}>{displayValue}</span>
           <div className="sb-trend" style={{ color: trendColor }}>
             <TrendIcon size={11} strokeWidth={2.5} />
             <span>{valueDelta}</span>
           </div>
-          <span className="sb-comparison">{comparisonLabel}</span>
+          {props.showComparison !== false && (
+            <span className="sb-comparison">{comparisonLabel}</span>
+          )}
         </div>
       </div>
     </div>
@@ -526,85 +678,72 @@ function renderChart(type, d, opts, blockId, layoutKey) {
   const chartBarSize = Math.max(8, Math.round(Number(opts.barSize ?? 12) * chartScale))
   const chartRadius = Math.max(2, Math.round(Number(opts.barRadius ?? 4) * chartScale))
   const ax = axisProps(chartFontSize)
-  const legend = opts.showLegend ? (
-    <Legend
-      layout="horizontal"
-      verticalAlign="bottom"
-      align="center"
-      iconType="circle"
-      iconSize={9}
-      height={34}
-      wrapperStyle={{
-        bottom: 0,
-        left: 0,
-        right: 0,
-        fontSize: Math.max(9, chartFontSize - 1),
-        color: '#475467',
-        textAlign: 'center',
-        paddingBottom: 2,
-      }}
-    />
-  ) : null
+  const legendPosition = opts.legendPosition || 'bottom'
+  const legendItems = opts.showLegend ? buildLegendItems(type, opts, xKey, yKey, yKey2, extraYKeys, extraYLabels, extraYColors, d) : []
   const grid = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.18)" strokeWidth={1} /> : null
   const topRadius = [chartRadius, chartRadius, 0, 0]
+  const withLegend = (chartNode) => wrapChartWithLegend(chartNode, legendItems, legendPosition, chartFontSize)
 
   switch (type) {
     case 'chart-bar':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            {grid}
-            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
-            <YAxis tick={ax} axisLine={false} tickLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
-            <Bar dataKey={yKey} fill={opts.color} radius={topRadius} barSize={chartBarSize} />
-            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} radius={topRadius} barSize={chartBarSize} />}
-            {extraYKeys.map((k, i) => (
-              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} radius={topRadius} barSize={chartBarSize} />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <BarChart data={d} margin={getChartMargin('chart-bar')}>
+              {grid}
+              <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+              <YAxis tick={ax} axisLine={false} tickLine={false} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Bar dataKey={yKey} fill={opts.color} radius={topRadius} barSize={chartBarSize} />
+              {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} radius={topRadius} barSize={chartBarSize} />}
+              {extraYKeys.map((k, i) => (
+                <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} radius={topRadius} barSize={chartBarSize} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-stacked':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            {grid}
-            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
-            <YAxis tick={ax} axisLine={false} tickLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
-            <Bar dataKey={yKey} fill={opts.color} stackId="stack" radius={topRadius} barSize={chartBarSize} />
-            {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} stackId="stack" radius={topRadius} barSize={chartBarSize} />}
-            {extraYKeys.map((k, i) => (
-              <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} stackId="stack" radius={topRadius} barSize={chartBarSize} />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <BarChart data={d} margin={getChartMargin('chart-stacked')}>
+              {grid}
+              <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+              <YAxis tick={ax} axisLine={false} tickLine={false} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Bar dataKey={yKey} fill={opts.color} stackId="stack" radius={topRadius} barSize={chartBarSize} />
+              {yKey2 && <Bar dataKey={yKey2} fill={opts.series2Color} stackId="stack" radius={topRadius} barSize={chartBarSize} />}
+              {extraYKeys.map((k, i) => (
+                <Bar key={k} dataKey={k} name={extraYLabels[i]} fill={extraYColors[i]} stackId="stack" radius={topRadius} barSize={chartBarSize} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-line':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <LineChart data={d} margin={{ top: 10, right: 14, left: 0, bottom: 24 }}>
-            {grid}
-            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
-            <YAxis tick={ax} axisLine={false} tickLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
-            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
-            {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />}
-            {extraYKeys.map((k, i) => (
-              <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]}
-                stroke={extraYColors[i]} strokeWidth={chartStrokeWidth}
-                dot={opts.showDots ? chartDot(extraYColors[i], chartScale) : false}
-                activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <LineChart data={d} margin={getChartMargin('chart-line')}>
+              {grid}
+              <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+              <YAxis tick={ax} axisLine={false} tickLine={false} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
+              {yKey2 && <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />}
+              {extraYKeys.map((k, i) => (
+                <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]}
+                  stroke={extraYColors[i]} strokeWidth={chartStrokeWidth}
+                  dot={opts.showDots ? chartDot(extraYColors[i], chartScale) : false}
+                  activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-area': {
@@ -612,8 +751,9 @@ function renderChart(type, d, opts, blockId, layoutKey) {
       const gradB = `grad-b-${blockId}`
       const fillOpacity = Math.max(0.05, Math.min(0.8, opts.areaOpacity / 100))
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <AreaChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+          <AreaChart data={d} margin={getChartMargin('chart-area')}>
             <defs>
               <linearGradient id={gradA} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={opts.color} stopOpacity={fillOpacity} />
@@ -634,7 +774,6 @@ function renderChart(type, d, opts, blockId, layoutKey) {
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
             <Area type="monotone" dataKey={yKey} stroke={opts.color} fill={`url(#${gradA})`} strokeWidth={chartStrokeWidth} />
             {yKey2 && <Area type="monotone" dataKey={yKey2} stroke={opts.series2Color} fill={`url(#${gradB})`} strokeWidth={chartStrokeWidth} />}
             {extraYKeys.map((k, i) => (
@@ -645,19 +784,20 @@ function renderChart(type, d, opts, blockId, layoutKey) {
               />
             ))}
           </AreaChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        )
       )
     }
 
     case 'chart-combo':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <ComposedChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+          <ComposedChart data={d} margin={getChartMargin('chart-combo')}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
             <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={chartBarSize} />
             {yKey2 && (
               <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
@@ -666,37 +806,41 @@ function renderChart(type, d, opts, blockId, layoutKey) {
               <Line key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stroke={extraYColors[i]} strokeWidth={chartStrokeWidth} dot={false} />
             ))}
           </ComposedChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-stackedarea':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <AreaChart data={d} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+          <AreaChart data={d} margin={getChartMargin('chart-stackedarea')}>
             {grid}
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
             <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={0.28} strokeWidth={chartStrokeWidth} />
             {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.22} strokeWidth={chartStrokeWidth} />}
             {extraYKeys.map((k, i) => (
               <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={0.18} strokeWidth={chartStrokeWidth} />
             ))}
           </AreaChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-sparkline':
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <LineChart data={d} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-            <XAxis dataKey={xKey} hide />
-            <YAxis hide />
-            <Tooltip {...TOOLTIP_PROPS} />
-            <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <LineChart data={d} margin={getChartMargin('chart-sparkline')}>
+              <XAxis dataKey={xKey} hide />
+              <YAxis hide />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Line type="monotone" dataKey={yKey} stroke={opts.color} strokeWidth={chartStrokeWidth} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        )
       )
 
     case 'chart-pie': {
@@ -708,52 +852,41 @@ function renderChart(type, d, opts, blockId, layoutKey) {
         90,
       )
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <PieChart>
-            <Pie data={d} cx="50%" cy="45%"
-              innerRadius={`${pieInner}%`}
-              outerRadius={`${pieOuter}%`}
-              dataKey={yKey} nameKey={xKey} label={opts.pieLabel}
-            >
-              {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
-            </Pie>
-            <Tooltip {...TOOLTIP_PROPS} />{legend}
-          </PieChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <PieChart margin={getChartMargin('chart-pie')}>
+              <Pie data={d} cx="50%" cy="45%"
+                innerRadius={`${pieInner}%`}
+                outerRadius={`${pieOuter}%`}
+                dataKey={yKey} nameKey={xKey} label={opts.pieLabel}
+              >
+                {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
+              </Pie>
+              <Tooltip {...TOOLTIP_PROPS} />
+            </PieChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
     case 'chart-donut': {
       const DONUT_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899']
-      const total = d.reduce((s, item) => s + (item.value || 0), 0)
       const donutInner = clamp(Math.round(52 * chartScale), 40, 78)
       const donutOuter = clamp(Math.round(85 * chartScale), donutInner + 8, 90)
       return (
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 8 }}>
-          <div style={{ flex: '0 0 55%', height: '100%' }}>
-            <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-              <PieChart>
-                <Pie data={d} cx="50%" cy="50%"
-                  innerRadius={`${donutInner}%`} outerRadius={`${donutOuter}%`}
-                  dataKey="value" nameKey="label" paddingAngle={2}
-                >
-                  {d.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
-                </Pie>
-                <Tooltip {...TOOLTIP_PROPS} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 8 }}>
-            {d.map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: DONUT_COLORS[i % DONUT_COLORS.length], flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 10, color: '#475467' }}>{item.label}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#1d2939' }}>{item.value.toLocaleString()}</span>
-                <span style={{ fontSize: 9, color: '#98a2b3' }}>({total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%)</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <PieChart margin={getChartMargin('chart-donut')}>
+              <Pie data={d} cx="50%" cy="50%"
+                innerRadius={`${donutInner}%`} outerRadius={`${donutOuter}%`}
+                dataKey="value" nameKey="label" paddingAngle={2}
+              >
+                {d.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
+              </Pie>
+              <Tooltip {...TOOLTIP_PROPS} />
+            </PieChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
@@ -767,23 +900,26 @@ function renderChart(type, d, opts, blockId, layoutKey) {
         90,
       )
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <RadialBarChart
-            cx="50%"
-            cy="60%"
-            innerRadius={`${radialInner}%`}
-            outerRadius={`${radialOuter}%`}
-            barSize={Math.max(10, chartBarSize)}
-            data={radial}
-            startAngle={180}
-            endAngle={0}
-          >
-            <RadialBar minAngle={15} background clockWise dataKey={yKey}
-              label={{ position: 'insideStart', fill: '#334155', fontSize: Math.max(9, chartFontSize - 1) }}
-            />
-            {legend}<Tooltip {...TOOLTIP_PROPS} />
-          </RadialBarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <RadialBarChart
+              cx="50%"
+              cy="60%"
+              innerRadius={`${radialInner}%`}
+              outerRadius={`${radialOuter}%`}
+              barSize={Math.max(10, chartBarSize)}
+              data={radial}
+              startAngle={180}
+              endAngle={0}
+              margin={getChartMargin('chart-radialbar')}
+            >
+              <RadialBar minAngle={15} background clockWise dataKey={yKey}
+                label={{ position: 'insideStart', fill: '#334155', fontSize: Math.max(9, chartFontSize - 1) }}
+              />
+              <Tooltip {...TOOLTIP_PROPS} />
+            </RadialBarChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
@@ -794,51 +930,56 @@ function renderChart(type, d, opts, blockId, layoutKey) {
         positive: Number(row.positive ?? 0),
       }))
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <RadarChart data={radarData}>
-            <PolarGrid stroke="rgba(99,179,237,0.12)" />
-            <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b' }} />
-            <PolarRadiusAxis tick={false} axisLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} />
-            {legend}
-            <Radar dataKey={yKey} stroke={opts.color} fill={opts.color} fillOpacity={0.22} />
-            {yKey2 && <Radar dataKey={yKey2} stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.18} />}
-          </RadarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <RadarChart data={radarData} margin={getChartMargin('chart-radar')}>
+              <PolarGrid stroke="rgba(99,179,237,0.12)" />
+              <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b' }} />
+              <PolarRadiusAxis tick={false} axisLine={false} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Radar dataKey={yKey} stroke={opts.color} fill={opts.color} fillOpacity={0.22} />
+              {yKey2 && <Radar dataKey={yKey2} stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.18} />}
+            </RadarChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
     case 'chart-scatter': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <BarChart data={d} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            {grid}
-            <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
-            <YAxis tick={ax} axisLine={false} tickLine={false} />
-            <Tooltip {...TOOLTIP_PROPS} />{legend}
-            <Bar dataKey={yKey} radius={topRadius}>
-              {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <BarChart data={d} margin={getChartMargin('chart-scatter')}>
+              {grid}
+              <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
+              <YAxis tick={ax} axisLine={false} tickLine={false} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Bar dataKey={yKey} radius={topRadius}>
+                {d.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
     case 'chart-hbar': {
       const HBAR_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
       return (
-        <ResponsiveContainer key={layoutKey} width="100%" height="100%">
-          <BarChart data={d} layout="vertical" margin={{ top: 4, right: 16, left: 10, bottom: 0 }}>
-            {grid}
-            <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
-            <Tooltip {...TOOLTIP_PROPS} />
-            <Bar dataKey={yKey} radius={[0, 4, 4, 0]} barSize={chartBarSize}>
-              {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        withLegend(
+          <ResponsiveContainer key={layoutKey} width="100%" height="100%">
+            <BarChart data={d} layout="vertical" margin={getChartMargin('chart-hbar')}>
+              {grid}
+              <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
+              <Tooltip {...TOOLTIP_PROPS} />
+              <Bar dataKey={yKey} radius={[0, 4, 4, 0]} barSize={chartBarSize}>
+                {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )
       )
     }
 
@@ -935,6 +1076,7 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     showGrid: block.props?.showGrid ?? true,
     showDots: block.props?.showDots ?? true,
     pieLabel: block.props?.pieLabel ?? false,
+    legendPosition: block.props?.legendPosition || 'bottom',
     fontSize: scaledFontSize(block.props?.fontSize ?? 11, scale, 8, 42),
     headingFontSize: scaledFontSize(block.props?.headingFontSize ?? block.props?.fontSize ?? 11, scale, 8, 72),
     chartScale: Number(block.props?.chartScale ?? 100),

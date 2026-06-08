@@ -3470,7 +3470,7 @@ body {
 }
 
 .canvas-dropzone {
-  min-height: 650px !important;
+  min-height: min(650px, calc(100vh - 240px)) !important;
   padding: 0 !important;
   border: 1px solid #d8dde6 !important;
   border-radius: 3px !important;
@@ -3523,7 +3523,7 @@ body {
 
 .section-free-canvas {
   margin: 0 8px !important;
-  min-height: 592px !important;
+  min-height: min(592px, calc(100vh - 320px)) !important;
   background-color: transparent !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -3603,19 +3603,6 @@ body {
 
 .card-body {
   padding: 0 12px 12px !important;
-}
-
-.sb-icon-wrap {
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 50% !important;
-}
-
-.sb-value {
-  color: #101828 !important;
-  font-size: 22px !important;
-  font-family: inherit !important;
-  letter-spacing: 0 !important;
 }
 
 .sb-progress-wrap {
@@ -3803,11 +3790,11 @@ body {
 }
 
 .canvas-dropzone {
-  min-height: 628px !important;
+  min-height: min(628px, calc(100vh - 240px)) !important;
 }
 
 .section-free-canvas {
-  min-height: 586px !important;
+  min-height: min(586px, calc(100vh - 320px)) !important;
 }
 
 .abs-widget {
@@ -3850,7 +3837,7 @@ body {
 }
 
 .card-body--stat {
-  padding: 4px 14px 12px !important;
+  padding: 4px 8px 12px !important;
 }
 
 .stat-block-render {
@@ -4256,6 +4243,46 @@ body {
   font-size: 12px;
   line-height: 1.5;
   color: #667085;
+}
+
+.chart-shell {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-shell__plot {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.chart-legend {
+  width: 100%;
+  color: #475467;
+}
+
+.chart-legend--top,
+.chart-legend--bottom {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.chart-legend--left,
+.chart-legend--right {
+  border-left: 1px solid rgba(148, 163, 184, 0.12);
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  padding-inline: 4px;
+}
+
+.chart-legend__item {
+  line-height: 1.2;
+}
+
+.chart-legend__item span:last-child {
+  max-width: 100%;
 }
 
 .treemap-chart,
@@ -4944,6 +4971,79 @@ body {
 .canvas-area--tablet .canvas-dropzone,
 .canvas-area--mobile .canvas-dropzone {
   background: #fff !important;
+}
+
+.canvas-area--tablet .canvas-dropzone {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(180deg, #050505 0%, #000 100%) !important;
+  border: 6px solid rgba(245, 245, 245, 0.98) !important;
+  border-radius: 42px !important;
+  min-height: 760px !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 24px 56px rgba(15, 23, 42, 0.14) !important;
+  padding: 12px !important;
+}
+
+.canvas-area--tablet .canvas-dropzone::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.canvas-dropzone-inner {
+  position: relative;
+  min-height: var(--dashboard-min-height);
+  background: #fff;
+  border-radius: 30px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.canvas-area--tablet .canvas-dropzone-inner {
+  min-height: 736px;
+  padding: 18px 18px 14px;
+  box-sizing: border-box;
+}
+
+.canvas-area--mobile .canvas-dropzone {
+  position: relative;
+  overflow: visible;
+  background: linear-gradient(180deg, #050505 0%, #000 100%) !important;
+  border: 3px solid rgba(31, 31, 31, 0.98) !important;
+  border-radius: 34px !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 18px 42px rgba(15, 23, 42, 0.16) !important;
+  padding: 6px !important;
+}
+
+.canvas-area--mobile .canvas-dropzone::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.canvas-area--mobile .canvas-dropzone-inner {
+  min-height: calc(var(--dashboard-min-height) - 12px);
+  border-radius: 28px;
+}
+
+.canvas-area--mobile .canvas-dropzone .canvas-empty,
+.canvas-area--mobile .canvas-dropzone .sections-list,
+.canvas-area--mobile .canvas-dropzone .drop-hint-banner,
+.canvas-area--mobile .canvas-dropzone .section-drag-ghost {
+  position: relative;
+  z-index: 1;
 }
 
 .canvas-dropzone {

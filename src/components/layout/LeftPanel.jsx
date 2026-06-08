@@ -8,7 +8,7 @@ const CHART_COLORS = [
 ]
 
 const BLOCK_NAMES = {
-  'kpi-card':       'KPI Card',
+  'kpi-card':       'Number Card',
   'chart-bar':      'Bar Chart',
   'chart-map':      'Map Chart',
   'chart-heatmap':  'Heat Map',
@@ -43,7 +43,7 @@ const BLOCK_NAMES = {
 }
 
 const WIDGET_DESCRIPTIONS = {
-  'kpi-card':       'Displays a quick KPI snapshot',
+  'kpi-card':       'Displays a key metric or KPI',
   'stat-total':     'Displays a key metric or KPI',
   'stat-positive':  'Displays a key metric or KPI',
   'stat-normal':    'Displays a key metric or KPI',
@@ -76,8 +76,19 @@ const DEFAULT_PROPS = {
   title: '', subtitle: '',
   color: '#06b6d4', colSpan: 1, width: 360, height: 420,
   showLegend: true, showGrid: true, showDots: true, pieLabel: false,
+  legendPosition: 'bottom',
   fontSize: 11, headingFontSize: 11, chartScale: 100, radius: 15, opacity: 100,
   fontFamily: 'Plus Jakarta Sans', fontWeight: 'Regular (400)',
+  metricKey: '',
+  dataSource: 'patient-screening-summary',
+  showComparison: true,
+  comparisonFormat: 'percentage',
+  numberFormat: 'comma',
+  suffix: '',
+  itemColor: '#06b6d4',
+  iconColor: '#06b6d4',
+  increaseColor: '#16a34a',
+  decreaseColor: '#dc2626',
   xKey: '', yKey: '', yKey2: '', extraYKeys: [],
   extraYColors: [], extraYLabels: [],
   strokeWidth: 2, barRadius: 4,
@@ -103,6 +114,92 @@ const FONT_WEIGHTS = [
   'Semibold (600)',
   'Bold (700)',
 ]
+
+const NUMBER_FORMAT_OPTIONS = [
+  { value: 'comma', label: '1,234' },
+  { value: 'plain', label: '1234' },
+  { value: 'decimal', label: '1,234.0' },
+  { value: 'compact', label: '1.2K' },
+  { value: 'currency', label: '$1,234' },
+]
+
+const COMPARISON_LABEL_OPTIONS = [
+  { value: 'vs Apr 1 - Apr 30, 2025', label: 'Previous Period' },
+  { value: 'vs Last Month', label: 'Previous Month' },
+  { value: 'vs Same Period Last Year', label: 'Same Period Last Year' },
+]
+
+const COMPARISON_FORMAT_OPTIONS = [
+  { value: 'percentage', label: 'Percentage' },
+  { value: 'value', label: 'Value Difference' },
+  { value: 'both', label: 'Both' },
+]
+
+const LEGEND_POSITION_OPTIONS = [
+  { value: 'top', label: 'Top' },
+  { value: 'right', label: 'Right' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'left', label: 'Left' },
+]
+
+const STAT_DATA_SOURCES = {
+  'patient-screening-summary': {
+    label: 'Patient Screening Summary',
+    description: 'Primary drive metrics and KPIs',
+    defaultMetric: 'totalScreened',
+    metrics: [
+      { value: 'totalScreened', label: 'Total Patients Screened' },
+      { value: 'testsTotal', label: 'Tests Conducted' },
+      { value: 'oralCancer', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+      { value: 'locations', label: 'Referred' },
+    ],
+  },
+  'outcome-summary': {
+    label: 'Outcome Summary',
+    description: 'Summary of screening outcomes',
+    defaultMetric: 'oralCancer',
+    metrics: [
+      { value: 'oralCancer', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+      { value: 'locations', label: 'Referred' },
+      { value: 'totalScreened', label: 'Total Patients Screened' },
+    ],
+  },
+  'testing-summary': {
+    label: 'Testing Summary',
+    description: 'Test volume and counts',
+    defaultMetric: 'testsTotal',
+    metrics: [
+      { value: 'testsTotal', label: 'Tests Conducted' },
+      { value: 'totalScreened', label: 'Total Patients Screened' },
+      { value: 'oralCancer', label: 'Positive Cases' },
+    ],
+  },
+}
+
+function getStatSourceConfig(sourceKey) {
+  return STAT_DATA_SOURCES[sourceKey] || STAT_DATA_SOURCES['patient-screening-summary']
+}
+
+function getChartMapping(type) {
+  if (type === 'chart-bar' || type === 'chart-line' || type === 'chart-area' || type === 'chart-combo' || type === 'chart-stackedarea') {
+    return { x: ['day'], y: ['screened', 'positive', 'normal'], hasSecondary: true }
+  }
+  if (type === 'chart-sparkline') return { x: ['day'], y: ['screened'], hasSecondary: false }
+  if (type === 'chart-hbar') return { x: ['name'], y: ['value'], hasSecondary: false }
+  if (type === 'chart-stacked') return { x: ['day'], y: ['normal', 'positive', 'screened'], hasSecondary: true }
+  if (type === 'chart-radar') return { x: ['camp'], y: ['screened', 'positive'], hasSecondary: true }
+  if (type === 'chart-pie' || type === 'chart-donut') return { x: ['label'], y: ['value'], hasSecondary: false }
+  if (type === 'chart-radialbar') return { x: ['camp'], y: ['screened', 'positive'], hasSecondary: false }
+  if (type === 'chart-scatter') return { x: ['group'], y: ['count'], hasSecondary: false }
+  return { x: ['day'], y: ['screened'], hasSecondary: false }
+}
+
+function getAxisOptions(type, axis = 'x') {
+  const mapping = getChartMapping(type)
+  return axis === 'x' ? mapping.x : mapping.y
+}
 
 function isStatType(type) { return type?.startsWith('stat-') }
 
@@ -151,6 +248,12 @@ export default function LeftPanel({
   const isStat = isStatType(selectedBlock.type) || selectedBlock.type === 'kpi-card'
   const isChart = selectedBlock.type?.startsWith('chart-')
   const isLayout = selectedBlock.type?.startsWith('layout-')
+  const statSource = isStat ? getStatSourceConfig(props.dataSource) : null
+  const statMetricOptions = statSource?.metrics || []
+  const activeMetricKey = isStat ? (props.metricKey || statSource?.defaultMetric || 'totalScreened') : ''
+  const chartMapping = isChart ? getChartMapping(selectedBlock.type) : null
+  const chartXAxisOptions = chartMapping ? getAxisOptions(selectedBlock.type, 'x') : []
+  const chartYAxisOptions = chartMapping ? getAxisOptions(selectedBlock.type, 'y') : []
 
   const handleUpdate = (patch) => {
     onUpdateBlock(patch)
@@ -248,31 +351,206 @@ export default function LeftPanel({
 
         {headingFontSizeControl}
 
+        {(isStat || isChart) && (
+          <Section title="Metric Data" defaultOpen>
+            {isStat && (
+              <>
+                <div className="wp-section" style={{ padding: 0, borderBottom: 'none' }}>
+                  <div className="wp-label">Data Source</div>
+                  <select
+                    className="wp-select"
+                    value={props.dataSource || 'patient-screening-summary'}
+                    onChange={(e) => {
+                      const nextSource = e.target.value
+                      const sourceConfig = getStatSourceConfig(nextSource)
+                      handleUpdate({
+                        dataSource: nextSource,
+                        metricKey: sourceConfig.defaultMetric,
+                        metricValue: '',
+                      })
+                    }}
+                  >
+                    {Object.entries(STAT_DATA_SOURCES).map(([value, config]) => (
+                      <option key={value} value={value}>{config.label}</option>
+                    ))}
+                  </select>
+                  <div className="wp-control-help" style={{ marginTop: 6 }}>{statSource?.description}</div>
+                </div>
+
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Metric / Value</div>
+                  <select
+                    className="wp-select"
+                    value={activeMetricKey}
+                    onChange={(e) => handleUpdate({ metricKey: e.target.value, metricValue: '' })}
+                  >
+                    {statMetricOptions.map((metric) => (
+                      <option key={metric.value} value={metric.value}>{metric.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Comparison</div>
+                  <select
+                    className="wp-select"
+                    value={props.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'}
+                    onChange={(e) => handleUpdate({ comparisonLabel: e.target.value })}
+                  >
+                    {COMPARISON_LABEL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+                  <span className="wp-row-label">Show comparison</span>
+                  <div className={`prop-toggle${props.showComparison !== false ? ' on' : ''}`} onClick={() => handleUpdate({ showComparison: props.showComparison === false })} />
+                </div>
+
+                <div className="wp-section" style={{ padding: '0', borderBottom: 'none' }}>
+                  <div className="wp-label">Comparison Format</div>
+                  <select
+                    className="wp-select"
+                    value={props.comparisonFormat || 'percentage'}
+                    onChange={(e) => handleUpdate({ comparisonFormat: e.target.value })}
+                  >
+                    {COMPARISON_FORMAT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {isChart && (
+              <>
+                <div className="wp-section" style={{ padding: 0, borderBottom: 'none' }}>
+                  <div className="wp-control-help" style={{ marginTop: 0, marginBottom: 10 }}>
+                    Map the data fields used by the chart. The available axes change based on the selected chart type.
+                  </div>
+                  <div className="wp-grid-2">
+                    <div>
+                      <div className="wp-label">X Axis</div>
+                      <select
+                        className="wp-select"
+                        value={props.xKey || ''}
+                        onChange={(e) => handleUpdate({ xKey: e.target.value })}
+                      >
+                        {chartXAxisOptions.map((axisKey) => (
+                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <div className="wp-label">Y Axis</div>
+                      <select
+                        className="wp-select"
+                        value={props.yKey || ''}
+                        onChange={(e) => handleUpdate({ yKey: e.target.value })}
+                      >
+                        {chartYAxisOptions.map((axisKey) => (
+                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {chartMapping?.hasSecondary && (
+                    <div style={{ marginTop: 10 }}>
+                      <div className="wp-label">Secondary Series</div>
+                      <select
+                        className="wp-select"
+                        value={props.yKey2 || ''}
+                        onChange={(e) => handleUpdate({ yKey2: e.target.value })}
+                      >
+                        {chartYAxisOptions.map((axisKey) => (
+                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </Section>
+        )}
+
         {/* Primary Color */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
           <div className="wp-grid-2">
             <div>
-              <div className="wp-label">Color</div>
+              <div className="wp-label">{isStat ? 'Item color' : 'Color'}</div>
               <input
                 type="color"
                 className="wp-input"
                 style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
-                value={props.color || '#06b6d4'}
-                onChange={(e) => handleUpdate({ color: e.target.value })}
+                value={(isStat ? props.itemColor : props.color) || '#06b6d4'}
+                onChange={(e) => handleUpdate(isStat ? { itemColor: e.target.value, color: e.target.value } : { color: e.target.value })}
               />
             </div>
             <div>
-               <div className="wp-label">Secondary Color</div>
+               <div className="wp-label">{isStat ? 'Icon color' : 'Secondary Color'}</div>
               <input
                 type="color"
                 className="wp-input"
                 style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
-                value={props.series2Color || '#ef4444'}
-                onChange={(e) => handleUpdate({ series2Color: e.target.value })}
+                value={(isStat ? props.iconColor : props.series2Color) || '#ef4444'}
+                onChange={(e) => handleUpdate(isStat ? { iconColor: e.target.value } : { series2Color: e.target.value })}
               />
             </div>
           </div>
         </div>
+
+        {isStat && (
+          <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
+            <div className="wp-grid-2">
+              <div>
+                <div className="wp-label">Number Format</div>
+                <select
+                  className="wp-select"
+                  value={props.numberFormat || 'comma'}
+                  onChange={(e) => handleUpdate({ numberFormat: e.target.value })}
+                >
+                  {NUMBER_FORMAT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="wp-label">Suffix (optional)</div>
+                <input
+                  className="wp-input"
+                  value={props.suffix || ''}
+                  onChange={(e) => handleUpdate({ suffix: e.target.value })}
+                  placeholder="%"
+                />
+              </div>
+            </div>
+            <div className="wp-grid-2" style={{ marginTop: 10 }}>
+              <div>
+                <div className="wp-label">Color for increase</div>
+                <input
+                  type="color"
+                  className="wp-input"
+                  style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
+                  value={props.increaseColor || '#16a34a'}
+                  onChange={(e) => handleUpdate({ increaseColor: e.target.value })}
+                />
+              </div>
+              <div>
+                <div className="wp-label">Color for decrease</div>
+                <input
+                  type="color"
+                  className="wp-input"
+                  style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
+                  value={props.decreaseColor || '#dc2626'}
+                  onChange={(e) => handleUpdate({ decreaseColor: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Visibility */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
@@ -282,6 +560,21 @@ export default function LeftPanel({
             <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Legend</span>
             <div className={`prop-toggle${props.showLegend ? ' on' : ''}`} onClick={() => handleUpdate({ showLegend: !props.showLegend })} />
           </div>
+
+          {isChart && props.showLegend !== false && (
+            <div style={{ marginTop: 12 }}>
+              <div className="wp-label">Legend Position</div>
+              <select
+                className="wp-select"
+                value={props.legendPosition || 'bottom'}
+                onChange={(e) => handleUpdate({ legendPosition: e.target.value })}
+              >
+                {LEGEND_POSITION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
             <span className="wp-label" style={{ margin: 0, flex: 1 }}>Show Grid</span>

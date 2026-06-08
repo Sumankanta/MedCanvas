@@ -597,6 +597,7 @@ export default function CanvasArea({
           </div>
 
           <div className={`canvas-dropzone${isDragOver ? ' drag-over' : ''}${isPreviewMode ? ' canvas-dropzone--preview' : ''}`}>
+            <div className="canvas-dropzone-inner">
 
             {/* ── Empty State ── */}
             {sections.length === 0 && (
@@ -760,6 +761,7 @@ export default function CanvasArea({
                 )}
               </>
             )}
+            </div>
           </div>
         </div>
       </div>
