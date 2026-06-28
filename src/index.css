@@ -944,17 +944,20 @@ svg {
 }
 
 .drop-hint-banner {
-  border: 1px dashed var(--cyan-border);
-  border-radius: 10px;
-  height: 32px;
+  border: 2px dashed #0891b2;
+  border-radius: 12px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  color: #67e8f9;
-  background: rgba(6, 182, 212, 0.09);
-  margin-bottom: 8px;
-  font-size: 12px;
+  gap: 8px;
+  color: #0e7490;
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.12), rgba(6, 182, 212, 0.06));
+  margin-top: 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .sections-list {
@@ -2662,27 +2665,30 @@ body.is-exporting .block-drag-handle,
 
 /* ── Add section footer button ──────────────────────────────── */
 .canvas-add-section-footer {
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  min-height: 56px;
-  padding: 12px 16px;
-  margin-top: 8px;
+  gap: 8px;
+  width: calc(100% - 32px) !important;
+  min-height: 60px;
+  padding: 14px 16px;
+  margin: 20px 16px 16px 16px !important;
   border-radius: 14px;
-  border: 1.5px dashed rgba(99, 179, 237, 0.24);
-  background: linear-gradient(180deg, rgba(96, 165, 250, 0.04), rgba(255,255,255,0.92));
-  color: #475569;
-  font-size: 12px;
+  border: 2px dashed #0891b2 !important;
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.10), rgba(6, 182, 212, 0.04)) !important;
+  color: #0e7490 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
   cursor: pointer;
   transition: all 0.2s;
+  letter-spacing: 0.01em;
 }
 
 .canvas-add-section-footer:hover {
-  border-color: rgba(6, 182, 212, 0.55);
-  color: #06b6d4;
-  background: linear-gradient(180deg, rgba(6, 182, 212, 0.08), rgba(255,255,255,0.96));
+  border-color: #0e7490 !important;
+  color: #155e75 !important;
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.18), rgba(6, 182, 212, 0.08)) !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.18);
 }
 
 /* ── Canvas empty CTA button ────────────────────────────────── */
@@ -3333,10 +3339,33 @@ body {
   outline: 0;
   color: #344054;
   font-size: 12px;
+  background: transparent;
 }
 
+.widget-search-clear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: #f0f2f5;
+  color: #667085;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s;
+}
+
+.widget-search-clear:hover {
+  background: #e2e5ea;
+  color: #344054;
+}
+
+/* widgets-body expands to fill available space; footer is conditional */
 .widgets-body {
-  height: calc(100% - 148px) !important;
+  height: calc(100% - 96px) !important;
   padding: 0 10px 10px !important;
 }
 
@@ -3883,10 +3912,23 @@ body {
 .widgets-body {
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: #d0d5dd transparent;
 }
 
-.widgets-body::-webkit-scrollbar,
+.widgets-body::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.widgets-body::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 4px;
+}
+
+.widgets-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .widget-library::-webkit-scrollbar,
 .left-panel::-webkit-scrollbar {
   width: 0 !important;
@@ -4187,17 +4229,22 @@ body {
   width: 100% !important;
   left: 0 !important;
   right: 0 !important;
-  bottom: 0 !important;
-  padding-bottom: 2px !important;
+  bottom: 6px !important;
+  padding-bottom: 6px !important;
+  pointer-events: none;
 }
 
 .canvas-card .recharts-legend-item {
   margin-right: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 .canvas-card .recharts-legend-item-text {
-  font-size: 10px !important;
-  line-height: 1.2;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+  color: #475467 !important;
+  white-space: nowrap;
 }
 
 .canvas-card .recharts-cartesian-grid line {
@@ -4686,6 +4733,40 @@ body {
   font-size: 11px;
 }
 
+.wp-segmented {
+  display: flex;
+  width: 100%;
+  border: 1px solid #eaecf0;
+  border-radius: 6px;
+  background: #f9fafb;
+  padding: 2px;
+  gap: 2px;
+}
+
+.wp-segmented__btn {
+  flex: 1 1 0;
+  min-height: 26px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: #475467;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wp-segmented__btn:hover {
+  color: #1d2939;
+}
+
+.wp-segmented__btn.is-active {
+  background: #fff;
+  color: #1d2939;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+}
+
 .wp-row {
   display: flex;
   align-items: center;
@@ -4980,6 +5061,9 @@ body {
   border: 6px solid rgba(245, 245, 245, 0.98) !important;
   border-radius: 42px !important;
   min-height: 760px !important;
+  height: 760px !important;
+  max-height: 760px !important;
+  box-sizing: content-box !important;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 24px 56px rgba(15, 23, 42, 0.14) !important;
@@ -5007,8 +5091,26 @@ body {
 
 .canvas-area--tablet .canvas-dropzone-inner {
   min-height: 736px;
+  height: 736px !important;
+  max-height: 736px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
   padding: 18px 18px 14px;
   box-sizing: border-box;
+}
+
+/* Hide scrollbar in tablet preview (WebKit) */
+.canvas-area--tablet .canvas-dropzone-inner::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+.canvas-area--tablet .canvas-dropzone-inner::-webkit-scrollbar-thumb,
+.canvas-area--tablet .canvas-dropzone-inner::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 .canvas-area--mobile .canvas-dropzone {
@@ -5021,6 +5123,10 @@ body {
     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 18px 42px rgba(15, 23, 42, 0.16) !important;
   padding: 6px !important;
+  min-height: var(--dashboard-min-height) !important;
+  height: var(--dashboard-min-height) !important;
+  max-height: var(--dashboard-min-height) !important;
+  box-sizing: content-box !important;
 }
 
 .canvas-area--mobile .canvas-dropzone::after {
@@ -5034,8 +5140,26 @@ body {
 }
 
 .canvas-area--mobile .canvas-dropzone-inner {
-  min-height: calc(var(--dashboard-min-height) - 12px);
+  height: calc(var(--dashboard-min-height) - 12px) !important;
+  min-height: calc(var(--dashboard-min-height) - 12px) !important;
+  max-height: calc(var(--dashboard-min-height) - 12px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   border-radius: 28px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar in mobile preview (WebKit) */
+.canvas-area--mobile .canvas-dropzone-inner::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+.canvas-area--mobile .canvas-dropzone-inner::-webkit-scrollbar-thumb,
+.canvas-area--mobile .canvas-dropzone-inner::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 .canvas-area--mobile .canvas-dropzone .canvas-empty,
@@ -5201,10 +5325,46 @@ body {
   transition: left 0.18s ease, top 0.18s ease, width 0.18s ease, height 0.18s ease;
 }
 
+.viewport-tablet .abs-widget--responsive.abs-widget--resizing,
+.viewport-mobile .abs-widget--responsive.abs-widget--resizing {
+  transition: none;
+}
+
 .viewport-tablet .abs-widget--responsive .block-drag-handle,
 .viewport-mobile .abs-widget--responsive .block-drag-handle {
-  cursor: default !important;
-  opacity: 0.35;
+  cursor: grab !important;
+  opacity: 1 !important;
+  color: #475569 !important;
+}
+
+/* Keep widget grip + resize controls always visible on touch viewports
+   (no hover state is available on tablets/phones) */
+.viewport-tablet .abs-widget-drag,
+.viewport-mobile .abs-widget-drag,
+.viewport-tablet .abs-widget-resize,
+.viewport-mobile .abs-widget-resize,
+.builder-root.viewport-tablet .abs-widget-drag,
+.builder-root.viewport-mobile .abs-widget-drag,
+.builder-root.viewport-tablet .abs-widget-resize,
+.builder-root.viewport-mobile .abs-widget-resize {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: flex !important;
+}
+
+/* Bump the resize handle a touch on tablet/mobile so it's easier to tap */
+.viewport-tablet .abs-widget-resize,
+.viewport-mobile .abs-widget-resize {
+  width: 28px !important;
+  height: 28px !important;
+  cursor: nwse-resize !important;
+}
+
+/* Dim the section grip is too subtle on small screens — bump contrast */
+.viewport-tablet .section-drag-handle,
+.viewport-mobile .section-drag-handle {
+  color: #94a3b8 !important;
 }
 
 .viewport-mobile .canvas-card {
@@ -5298,6 +5458,33 @@ body {
     transform: translateX(100%) !important;
     opacity: 0 !important;
     pointer-events: none !important;
+  }
+}
+
+/* Light mode override for narrow-viewport panel overlays */
+@media (max-width: 1024px) {
+  html[data-theme='light'] .left-panel,
+  html[data-theme='light'] .right-panel {
+    background: #fff !important;
+    backdrop-filter: none !important;
+    box-shadow: 0 4px 24px rgba(16, 24, 40, 0.12) !important;
+  }
+
+  html[data-theme='light'] .left-panel {
+    border-right: 1px solid #eaecf0 !important;
+  }
+
+  html[data-theme='light'] .right-panel {
+    border-left: 1px solid #eaecf0 !important;
+  }
+
+  html[data-theme='light'] .panel-title,
+  html[data-theme='light'] .panel-close {
+    color: #344054 !important;
+  }
+
+  html[data-theme='light'] .panel-close:hover {
+    color: #e11d48 !important;
   }
 }
 
@@ -5706,6 +5893,31 @@ body {
 
   .right-panel {
     right: 0 !important;
+  }
+}
+
+/* Light mode override for narrow-viewport panel overlays */
+@media (max-width: 1180px) {
+  html[data-theme='light'] .left-panel,
+  html[data-theme='light'] .right-panel {
+    background: #fff !important;
+    backdrop-filter: none !important;
+    box-shadow: 0 4px 24px rgba(16, 24, 40, 0.12) !important;
+  }
+
+  html[data-theme='light'] .left-panel {
+    border-right: 1px solid #eaecf0 !important;
+  }
+
+  html[data-theme='light'] .right-panel {
+    border-left: 1px solid #eaecf0 !important;
+  }
+
+  html[data-theme='light'] .panel-title,
+  html[data-theme='light'] .panel-close,
+  html[data-theme='light'] .panel-header {
+    color: #344054 !important;
+    border-color: #eaecf0 !important;
   }
 }
 
@@ -6853,4 +7065,972 @@ html[data-theme='dark'] .settings-swatches button.active {
   .schedule-time-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================ */
+/* Modern Stat Card � Redesigned KPI Layout                    */
+/* ============================================================ */
+.stat-block-render.stat-block-render--modern {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.stat-block-render--modern .sb-modern-left {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+}
+
+.stat-block-render--modern .sb-modern-right {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  height: 100% !important;
+}
+
+.stat-block-render--modern .sb-icon-wrap {
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 auto !important;
+  margin-top: 19px !important;
+}
+
+.stat-block-render--modern .sb-modern-title {
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+
+.stat-block-render--modern .sb-modern-value {
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.02em !important;
+  color: #111827 !important;
+}
+
+.stat-block-render--modern .sb-modern-subtitle {
+  color: #9ca3af !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+
+.stat-block-render--modern .sb-modern-trend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-weight: 600 !important;
+  flex: 0 0 auto !important;
+}
+
+.stat-block-render--modern .sb-modern-trend-text {
+  white-space: nowrap !important;
+}
+
+/* Soft border + shadow on the stat card shell */
+.canvas-card.canvas-card--stat {
+  position: relative !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.canvas-card.canvas-card--stat:hover {
+  box-shadow: 0 4px 10px rgba(16, 24, 40, 0.06), 0 2px 4px rgba(16, 24, 40, 0.05) !important;
+}
+
+.canvas-card.canvas-card--stat .card-accent {
+  display: none !important;
+}
+
+.canvas-card.canvas-card--stat .card-body,
+.canvas-card.canvas-card--stat .card-body--stat {
+  padding: 0 !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.canvas-card.canvas-card--stat .card-body-content {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+
+/* ============================================================ */
+/* DashboardCard system: progress, animation, icon, dark theme  */
+/* ============================================================ */
+
+/* --- Animated value & trend transitions in canvas stat card --- */
+.stat-block-render--modern .sb-modern-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+.stat-block-render--modern.stat-block-render--has-progress {
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+}
+
+.stat-block-render--modern .sb-modern-value--animated {
+  display: inline-block;
+  animation: sb-value-pop 380ms ease-out;
+  will-change: transform, opacity;
+}
+
+@keyframes sb-value-pop {
+  0%   { opacity: 0.35; transform: translateY(4px) scale(0.97); }
+  60%  { opacity: 1;    transform: translateY(0)   scale(1.02); }
+  100% { opacity: 1;    transform: translateY(0)   scale(1); }
+}
+
+.stat-block-render--modern .sb-modern-trend {
+  transition: color 200ms ease;
+}
+
+/* --- Progress bar (canvas stat card) --- */
+.sb-progress {
+  width: 100%;
+}
+
+.sb-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #eef2f7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sb-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sb-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* --- Standalone DashboardCard component --- */
+.dashcard {
+  --dc-accent: #3b82f6;
+  --dc-icon: var(--dc-accent);
+  --dc-bg: #ffffff;
+  --dc-fg: #111827;
+  --dc-muted: #6b7280;
+  --dc-sub: #9ca3af;
+  --dc-border: #e5e7eb;
+
+  position: relative;
+  background: var(--dc-bg);
+  color: var(--dc-fg);
+  border: 1px solid var(--dc-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.dashcard:hover {
+  box-shadow: 0 6px 14px rgba(16, 24, 40, 0.08), 0 2px 5px rgba(16, 24, 40, 0.05);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--dc-accent) 35%, var(--dc-border));
+}
+
+.dashcard--dark {
+  --dc-bg: #0f172a;
+  --dc-fg: #f1f5f9;
+  --dc-muted: #94a3b8;
+  --dc-sub: #64748b;
+  --dc-border: #1e293b;
+}
+
+.dashcard__row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashcard__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dashcard__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dc-muted);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashcard__value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--dc-fg);
+  line-height: 1.1;
+  animation: dashcard-value-pop 380ms ease-out;
+}
+
+@keyframes dashcard-value-pop {
+  0%   { opacity: 0.35; transform: translateY(4px) scale(0.97); }
+  60%  { opacity: 1;    transform: translateY(0)   scale(1.02); }
+  100% { opacity: 1;    transform: translateY(0)   scale(1); }
+}
+
+.dashcard__sub {
+  font-size: 11px;
+  color: var(--dc-sub);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashcard__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.dashcard__icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--dc-icon) 14%, transparent);
+  color: var(--dc-icon);
+  transition: transform 220ms ease, background 220ms ease;
+}
+
+.dashcard:hover .dashcard__icon-wrap {
+  transform: scale(1.06);
+}
+
+.dashcard__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 200ms ease, transform 200ms ease;
+}
+
+.dashcard__trend--up   { color: #16a34a; }
+.dashcard__trend--down { color: #dc2626; }
+.dashcard__trend--flat { color: #64748b; }
+
+/* Progress variant */
+.dashcard__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashcard__progress-track {
+  height: 6px;
+  width: 100%;
+  background: color-mix(in srgb, var(--dc-accent) 12%, #eef2f7);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dashcard--dark .dashcard__progress-track {
+  background: color-mix(in srgb, var(--dc-accent) 22%, #1e293b);
+}
+
+.dashcard__progress-fill {
+  height: 100%;
+  background: var(--dc-accent);
+  border-radius: 999px;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dashcard__progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--dc-muted);
+  font-weight: 500;
+}
+
+/* Editable text + properties chip */
+.dashcard__editable {
+  border: none;
+  background: transparent;
+  cursor: text;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border-radius: 4px;
+}
+
+.dashcard__editable:hover {
+  background: rgba(59, 130, 246, 0.06);
+  outline: 1px dashed rgba(59, 130, 246, 0.4);
+}
+
+.dashcard__editable-icon {
+  opacity: 0;
+  transition: opacity 120ms ease;
+  color: #94a3b8;
+}
+
+.dashcard__editable:hover .dashcard__editable-icon { opacity: 1; }
+
+.dashcard__editing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dashcard__editing input {
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  min-width: 80px;
+}
+
+.dashcard__editing button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  color: #475467;
+}
+
+.dashcard__editing button:hover { background: #f1f5f9; }
+
+/* Properties panel chip */
+.wp-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #475467;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.wp-chip:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+/* Ensure progress variant outer is column (overrides earlier !important) */
+.stat-block-render.stat-block-render--modern.stat-block-render--has-progress {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+}
+
+/* Properties panel ? Apply / Reset action bar */
+.wp-apply-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 10px rgba(16, 24, 40, 0.04);
+}
+
+.wp-apply-bar--dirty {
+  background: #fffaf0;
+  border-top-color: #fcd34d;
+}
+
+.wp-apply-bar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.wp-apply-bar--dirty .wp-apply-bar__status { color: #b45309; }
+
+.wp-apply-bar__hint { color: #9ca3af; }
+
+.wp-apply-bar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.wp-apply-bar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 120ms ease;
+  border: 1px solid transparent;
+}
+
+.wp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wp-btn:not(:disabled):active { transform: translateY(1px); }
+
+.wp-btn--ghost {
+  background: #fff;
+  color: #475467;
+  border-color: #d0d5dd;
+}
+
+.wp-btn--ghost:not(:disabled):hover {
+  background: #f9fafb;
+  border-color: #98a2b3;
+}
+
+.wp-btn--primary {
+  background: #1570ef;
+  color: #fff;
+  border-color: #1570ef;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+}
+
+.wp-btn--primary:not(:disabled):hover {
+  background: #155eef;
+  border-color: #155eef;
+}
+
+/* Apply panel-body should leave room for sticky footer */
+.properties-panel { display: flex; flex-direction: column; }
+.properties-panel .panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Tablet / Mobile responsive scroll fix (Design mode)
+ *
+ * Keep the device-frame look in Design mode but make the inner content
+ * scrollable with a visible slim scrollbar so users can navigate widgets
+ * that extend beyond the visible viewport.
+ *
+ * Preview mode keeps the polished hidden-scrollbar look.
+ * ────────────────────────────────────────────────────────────────────── */
+.canvas-area--tablet .canvas-viewport:not(.canvas-viewport--preview) .canvas-dropzone-inner,
+.canvas-area--mobile .canvas-viewport:not(.canvas-viewport--preview) .canvas-dropzone-inner {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.canvas-area--tablet .canvas-viewport:not(.canvas-viewport--preview) .canvas-dropzone-inner::-webkit-scrollbar,
+.canvas-area--mobile .canvas-viewport:not(.canvas-viewport--preview) .canvas-dropzone-inner::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* The sections list and section-free-canvas inside the device frame must NOT
+   trap their own scroll — let the dropzone-inner be the single scroll
+   container so the user has one obvious scrollbar on the right edge. */
+.canvas-area--tablet .canvas-viewport:not(.canvas-viewport--preview) .sections-list,
+.canvas-area--mobile .canvas-viewport:not(.canvas-viewport--preview) .sections-list {
+  overflow: visible !important;
+}
+
+.canvas-area--tablet .canvas-viewport:not(.canvas-viewport--preview) .section-free-canvas,
+.canvas-area--mobile .canvas-viewport:not(.canvas-viewport--preview) .section-free-canvas {
+  overflow: visible !important;
+}
+
+
+/* ============================================================
+   Preview Shell � 3-column device-frame preview experience
+   ============================================================ */
+.builder-root.is-preview .preview-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 320px;
+  gap: 16px;
+  padding: 16px;
+  width: 100%;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+  background: #f5f7fb;
+  box-sizing: border-box;
+}
+
+html[data-theme='dark'] .builder-root.is-preview .preview-shell {
+  background: #0b1220;
+}
+
+.preview-rail {
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+html[data-theme='dark'] .preview-rail {
+  background: #111827;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.preview-rail__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #101828;
+  letter-spacing: 0.01em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f2f4f7;
+}
+
+html[data-theme='dark'] .preview-rail__title {
+  color: #f9fafb;
+  border-bottom-color: #1f2937;
+}
+
+.preview-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-reset-btn {
+  margin-top: auto;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  color: #344054;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.preview-reset-btn:hover {
+  background: #f9fafb;
+  border-color: #98a2b3;
+}
+
+html[data-theme='dark'] .preview-reset-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+.preview-summary__group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  padding: 10px 0;
+  border-top: 1px solid #f2f4f7;
+}
+
+html[data-theme='dark'] .preview-summary__group {
+  border-top-color: #1f2937;
+}
+
+.preview-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  overflow: auto;
+  padding: 8px 16px 24px;
+  min-width: 0;
+}
+
+.preview-stage__hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.preview-stage__device-label {
+  font-size: 11.5px;
+  color: #667085;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] .preview-stage__device-label {
+  color: #9ca3af;
+}
+
+/* Slot reserves the SCALED footprint so the layout stays tidy. */
+.preview-stage__frame-slot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Device frame -------------------------------------------------- */
+.device-frame {
+  position: relative;
+  background: #1a1d21;
+  border-radius: 28px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 0 0 1px #2a2f35 inset,
+    0 30px 60px -20px rgba(16, 24, 40, 0.45),
+    0 18px 36px -18px rgba(16, 24, 40, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-frame--mobile {
+  border-radius: 44px;
+}
+
+.device-frame--mobile .device-frame__notch {
+  display: none;
+}
+
+.device-frame--mobile .device-frame__speaker {
+  display: none;
+}
+
+/* Dynamic Island — sits on top of the screen, like iPhone 15 Pro */
+.device-frame--mobile .device-frame__island {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 5;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 1px 2px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 14px;
+}
+
+.device-frame--mobile .device-frame__camera {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2a3340 0%, #0b0e12 65%, #050608 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.18),
+    inset 0 0 4px rgba(0,0,0,0.8);
+}
+
+.device-frame--tablet {
+  border-radius: 24px;
+}
+
+.device-frame--desktop {
+  border-radius: 14px;
+}
+
+.device-frame--desktop::after {
+  /* small stand bar */
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36%;
+  height: 6px;
+  border-radius: 0 0 8px 8px;
+  background: #2a2f35;
+}
+
+.device-frame__screen {
+  position: relative;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.device-frame--mobile .device-frame__screen {
+  border-radius: 32px;
+}
+
+.device-frame--desktop .device-frame__screen {
+  border-radius: 6px;
+}
+
+/* The CanvasArea inside the device frame should fill the screen. */
+.device-frame__screen > * {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The canvas-area's inner viewport should scroll, not the outer card. */
+.device-frame__screen .canvas-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Disable interaction artifacts inside preview screen */
+.builder-root.is-preview .device-frame__screen .responsive-toolbar,
+.builder-root.is-preview .device-frame__screen .canvas-toolbar { display: none !important; }
+
+/* Responsive collapse: narrow screens collapse rails */
+@media (max-width: 1280px) {
+  .builder-root.is-preview .preview-shell {
+    grid-template-columns: 240px minmax(0, 1fr) 280px;
+  }
+}
+@media (max-width: 1024px) {
+  .builder-root.is-preview .preview-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+    overflow: auto;
+  }
+  .preview-rail { max-height: 340px; }
+}
+/* ============================================================
+   /Preview Shell
+   ============================================================ */
+
+/* Fill the device screen with the canvas (preview mode) */
+.device-frame__screen .canvas-area {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.device-frame__screen .canvas-viewport,
+.device-frame__screen .canvas-viewport--grid {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  background: #f8fafc !important;
+  overflow: auto !important;
+}
+.device-frame__screen .canvas-surface {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.device-frame__screen .dashboard-header-block {
+  padding: 14px 16px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+.device-frame__screen .section-wrap,
+.device-frame__screen .canvas-section {
+  margin: 0 0 12px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.device-frame__screen .canvas-section .section-header,
+.device-frame__screen .section-header {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* In preview, neutralize the legacy tablet/mobile fake device frames so only
+   PreviewShell's device frame is visible. */
+.device-frame__screen .canvas-dropzone,
+.device-frame__screen .canvas-area--tablet .canvas-dropzone,
+.device-frame__screen .canvas-area--mobile .canvas-dropzone {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 12px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.device-frame__screen .canvas-dropzone::after,
+.device-frame__screen .canvas-area--tablet .canvas-dropzone::after,
+.device-frame__screen .canvas-area--mobile .canvas-dropzone::after {
+  content: none !important;
+  display: none !important;
+}
+.device-frame__screen .canvas-dropzone-inner,
+.device-frame__screen .canvas-area--tablet .canvas-dropzone-inner,
+.device-frame__screen .canvas-area--mobile .canvas-dropzone-inner {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.device-frame__screen .canvas-surface,
+.device-frame__screen .canvas-area--tablet .canvas-surface,
+.device-frame__screen .canvas-area--mobile .canvas-surface {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: 100% !important;
+  max-width: none !important;
+  transform: none !important;
+}
+
+/* Hide scrollbars inside the preview device screen (desktop & tablet) */
+.device-frame--desktop .device-frame__screen,
+.device-frame--tablet  .device-frame__screen,
+.device-frame--desktop .device-frame__screen .canvas-viewport,
+.device-frame--tablet  .device-frame__screen .canvas-viewport,
+.device-frame--desktop .device-frame__screen *,
+.device-frame--tablet  .device-frame__screen * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.device-frame--desktop .device-frame__screen::-webkit-scrollbar,
+.device-frame--tablet  .device-frame__screen::-webkit-scrollbar,
+.device-frame--desktop .device-frame__screen *::-webkit-scrollbar,
+.device-frame--tablet  .device-frame__screen *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Hide scrollbars on the preview rails (left options + right summary) */
+.preview-rail {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.preview-rail::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Also hide on the center stage */
+.preview-stage {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.preview-stage::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }

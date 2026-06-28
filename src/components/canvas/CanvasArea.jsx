@@ -75,6 +75,52 @@ function getLastThirtyDays(date = new Date()) {
   return { start, end }
 }
 
+// Returns the immediately-preceding period (same length) for the given range.
+// Used to render comparison labels like "vs Apr 1 - Apr 30, 2025" on KPI cards.
+function getPreviousBounds(dateRangeKey, customDateRange) {
+  if (dateRangeKey === 'today') {
+    const today = new Date()
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
+    return { start, end: new Date(start) }
+  }
+  if (dateRangeKey === 'this-week') {
+    const { start } = getWeekBounds(new Date())
+    const prevStart = new Date(start); prevStart.setDate(start.getDate() - 7)
+    const prevEnd = new Date(start); prevEnd.setDate(start.getDate() - 1)
+    return { start: prevStart, end: prevEnd }
+  }
+  if (dateRangeKey === 'last-30-days') {
+    const { start } = getLastThirtyDays(new Date())
+    const prevEnd = new Date(start); prevEnd.setDate(start.getDate() - 1)
+    const prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - 29)
+    return { start: prevStart, end: prevEnd }
+  }
+  if (dateRangeKey === 'custom') {
+    const s = parseDateValue(customDateRange.start)
+    const e = parseDateValue(customDateRange.end)
+    if (s && e) {
+      const days = Math.round((e - s) / 86400000) + 1
+      const prevEnd = new Date(s); prevEnd.setDate(s.getDate() - 1)
+      const prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - (days - 1))
+      return { start: prevStart, end: prevEnd }
+    }
+    return getMonthBounds(new Date())
+  }
+  // this-month (default): previous calendar month
+  const today = new Date()
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  const end = new Date(today.getFullYear(), today.getMonth(), 0)
+  return { start, end }
+}
+
+function formatComparisonLabel(start, end) {
+  if (!start || !end) return ''
+  const s = new Date(start)
+  const e = new Date(end)
+  const fmt = (d) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d)
+  return `vs ${fmt(s)} - ${fmt(e)}, ${e.getFullYear()}`
+}
+
 function getBlockGroup(type) {
   if (type === 'table') return 'table'
   if (type?.startsWith('stat-') || type === 'num') return 'stat'
@@ -190,6 +236,8 @@ export default function CanvasArea({
   const activeWidgetFilterCount = Object.values(widgetFilters).filter(Boolean).length
   const filteredData = useMemo(() => {
     const { start, end } = getDateBounds(dateRangeKey, customDateRange)
+    const prev = getPreviousBounds(dateRangeKey, customDateRange)
+    const comparisonLabel = formatComparisonLabel(prev.start, prev.end)
     const screeningByDayData = (data.screeningByDayData || []).filter((row) => isWithinRange(row.date || row.day, start, end))
     const patientTableData = (data.patientTableData || []).filter((row) => isWithinRange(row.dateISO || row.date, start, end))
 
@@ -214,6 +262,7 @@ export default function CanvasArea({
       screeningByDayData,
       patientTableData,
       statVariables,
+      comparisonLabel,
     }
   }, [customDateRange, data, dateRangeKey])
 
@@ -621,11 +670,6 @@ export default function CanvasArea({
             {/* ── Sections ── */}
             {sections.length > 0 && (
               <>
-                {!isPreviewMode && isDragOver && (
-                  <div className="drop-hint-banner">
-                    <Plus size={13} /> Drop widget here or click to add
-                  </div>
-                )}
 
                 {isPreviewMode ? (
                   <div className="sections-list sections-list--preview">
@@ -756,7 +800,7 @@ export default function CanvasArea({
                     }}
                     onClick={() => onAddSection(null)}
                   >
-                    <Plus size={13} /> Drop widget here or click to add
+                    <Plus size={16} /> Drop widget here or click to add
                   </button>
                 )}
               </>

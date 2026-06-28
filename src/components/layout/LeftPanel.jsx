@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Hash, Minus, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, ChevronDown, ChevronRight, Hash, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { CARD_ICON_LIBRARY } from '@/lib/cardIcons'
 
 const CHART_COLORS = [
   '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
@@ -77,6 +78,8 @@ const DEFAULT_PROPS = {
   color: '#06b6d4', colSpan: 1, width: 360, height: 420,
   showLegend: true, showGrid: true, showDots: true, pieLabel: false,
   legendPosition: 'bottom',
+  legendOrientation: 'auto',
+  legendAlign: 'center',
   fontSize: 11, headingFontSize: 11, chartScale: 100, radius: 15, opacity: 100,
   fontFamily: 'Plus Jakarta Sans', fontWeight: 'Regular (400)',
   metricKey: '',
@@ -124,7 +127,7 @@ const NUMBER_FORMAT_OPTIONS = [
 ]
 
 const COMPARISON_LABEL_OPTIONS = [
-  { value: 'vs Apr 1 - Apr 30, 2025', label: 'Previous Period' },
+  { value: '', label: 'Previous Period (auto)' },
   { value: 'vs Last Month', label: 'Previous Month' },
   { value: 'vs Same Period Last Year', label: 'Same Period Last Year' },
 ]
@@ -140,6 +143,21 @@ const LEGEND_POSITION_OPTIONS = [
   { value: 'right', label: 'Right' },
   { value: 'bottom', label: 'Bottom' },
   { value: 'left', label: 'Left' },
+]
+
+const LEGEND_ORIENTATION_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'horizontal', label: 'Horizontal' },
+  { value: 'vertical', label: 'Vertical' },
+]
+
+// Alignment along the legend's main axis.
+// For top/bottom legends: start = left, center = center, end = right.
+// For left/right legends: start = top,  center = middle, end = bottom.
+const LEGEND_ALIGN_OPTIONS = [
+  { value: 'start', label: 'Start' },
+  { value: 'center', label: 'Center' },
+  { value: 'end', label: 'End' },
 ]
 
 const STAT_DATA_SOURCES = {
@@ -182,23 +200,155 @@ function getStatSourceConfig(sourceKey) {
   return STAT_DATA_SOURCES[sourceKey] || STAT_DATA_SOURCES['patient-screening-summary']
 }
 
+// Per-chart metric field definitions with human-readable labels and descriptions.
+// x / y entries are { value, label } pairs used in the Widget Properties dropdowns.
+const CHART_FIELD_MAPPINGS = {
+  'chart-bar': {
+    description: 'Daily bar chart. X = date column, Y = the metric to plot as bars.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-line': {
+    description: 'Trend line over time. Choose which metric to trace.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-area': {
+    description: 'Filled area trend. Primary fills area; secondary overlays a second area.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-combo': {
+    description: 'Bars + line overlay. Primary = bars, Secondary = line.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-stackedarea': {
+    description: 'Stacked area layers over time. Secondary stacks on top of primary.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-stacked': {
+    description: 'Stacked column chart. Both series stack on the same bar.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'normal', label: 'Normal / Clear' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'screened', label: 'Screened' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-sparkline': {
+    description: 'Compact trend line. Choose the single metric to display.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: false,
+  },
+  'chart-heatmap': {
+    description: 'Intensity heat map by day. Colour intensity reflects the selected metric.',
+    x: [{ value: 'day', label: 'Day (Date)' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+      { value: 'normal', label: 'Normal / Clear' },
+    ],
+    hasSecondary: false,
+  },
+  'chart-hbar': {
+    description: 'Horizontal bar per test type. X = category label, Y = count/value.',
+    x: [{ value: 'name', label: 'Test Name' }],
+    y: [{ value: 'value', label: 'Count' }],
+    hasSecondary: false,
+  },
+  'chart-radar': {
+    description: 'Radar profile per camp. Two metrics are plotted as overlapping shapes.',
+    x: [{ value: 'camp', label: 'Camp / Location' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+    ],
+    hasSecondary: true,
+  },
+  'chart-radialbar': {
+    description: 'Radial bars per camp. Each arc represents one camp metric.',
+    x: [{ value: 'camp', label: 'Camp / Location' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+    ],
+    hasSecondary: false,
+  },
+  'chart-map': {
+    description: 'Geographic treemap grouped by camp. Size = screened count, colour = positive rate.',
+    x: [{ value: 'camp', label: 'Camp / Location' }],
+    y: [
+      { value: 'screened', label: 'Screened' },
+      { value: 'positive', label: 'Positive Cases' },
+    ],
+    hasSecondary: false,
+  },
+  'chart-pie': {
+    description: 'Pie slices for each screening outcome. Label = slice name, Value = count.',
+    x: [{ value: 'label', label: 'Outcome Label' }],
+    y: [{ value: 'value', label: 'Count' }],
+    hasSecondary: false,
+  },
+  'chart-donut': {
+    description: 'Donut chart of screening outcomes. Label = slice name, Value = count.',
+    x: [{ value: 'label', label: 'Outcome Label' }],
+    y: [{ value: 'value', label: 'Count' }],
+    hasSecondary: false,
+  },
+  'chart-scatter': {
+    description: 'Distribution scatter by age group. X = age group, Y = patient count.',
+    x: [{ value: 'group', label: 'Age Group' }],
+    y: [{ value: 'count', label: 'Patient Count' }],
+    hasSecondary: false,
+  },
+}
+
 function getChartMapping(type) {
-  if (type === 'chart-bar' || type === 'chart-line' || type === 'chart-area' || type === 'chart-combo' || type === 'chart-stackedarea') {
-    return { x: ['day'], y: ['screened', 'positive', 'normal'], hasSecondary: true }
+  return CHART_FIELD_MAPPINGS[type] || {
+    description: '',
+    x: [{ value: 'day', label: 'Day' }],
+    y: [{ value: 'screened', label: 'Screened' }],
+    hasSecondary: false,
   }
-  if (type === 'chart-sparkline') return { x: ['day'], y: ['screened'], hasSecondary: false }
-  if (type === 'chart-hbar') return { x: ['name'], y: ['value'], hasSecondary: false }
-  if (type === 'chart-stacked') return { x: ['day'], y: ['normal', 'positive', 'screened'], hasSecondary: true }
-  if (type === 'chart-radar') return { x: ['camp'], y: ['screened', 'positive'], hasSecondary: true }
-  if (type === 'chart-pie' || type === 'chart-donut') return { x: ['label'], y: ['value'], hasSecondary: false }
-  if (type === 'chart-radialbar') return { x: ['camp'], y: ['screened', 'positive'], hasSecondary: false }
-  if (type === 'chart-scatter') return { x: ['group'], y: ['count'], hasSecondary: false }
-  return { x: ['day'], y: ['screened'], hasSecondary: false }
 }
 
 function getAxisOptions(type, axis = 'x') {
   const mapping = getChartMapping(type)
-  return axis === 'x' ? mapping.x : mapping.y
+  // Return plain string array for backward compat; JSX now uses mapping directly
+  return axis === 'x' ? mapping.x.map((o) => o.value) : mapping.y.map((o) => o.value)
 }
 
 function isStatType(type) { return type?.startsWith('stat-') }
@@ -226,7 +376,14 @@ export default function LeftPanel({
   onRemoveBlock,
 }) {
   const selectedId = selectedBlock?.id
-  const props = selectedBlock ? { ...DEFAULT_PROPS, ...selectedBlock.props } : null
+  const baseProps = selectedBlock ? { ...DEFAULT_PROPS, ...selectedBlock.props } : null
+
+  // Draft buffer: card edits are staged here until the user clicks Apply.
+  const [draft, setDraft] = useState({})
+  useEffect(() => { setDraft({}) }, [selectedId])
+
+  const props = baseProps ? { ...baseProps, ...draft } : null
+  const isDirty = Object.keys(draft).length > 0
 
   if (!selectedBlock || !props) {
     return (
@@ -255,9 +412,23 @@ export default function LeftPanel({
   const chartXAxisOptions = chartMapping ? getAxisOptions(selectedBlock.type, 'x') : []
   const chartYAxisOptions = chartMapping ? getAxisOptions(selectedBlock.type, 'y') : []
 
+  // Card edits go to a draft and require Apply.
+  // Other widget types keep the previous live-update behavior.
   const handleUpdate = (patch) => {
-    onUpdateBlock(patch)
+    if (isStat) {
+      setDraft((prev) => ({ ...prev, ...patch }))
+    } else {
+      onUpdateBlock(patch)
+    }
   }
+
+  const handleApply = () => {
+    if (!isDirty) return
+    onUpdateBlock({ ...draft })
+    setDraft({})
+  }
+
+  const handleReset = () => setDraft({})
 
   const clampNumber = (value, min, max, fallback) => {
     const parsed = parseInt(value, 10)
@@ -391,21 +562,50 @@ export default function LeftPanel({
                 </div>
 
                 <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
-                  <div className="wp-label">Comparison</div>
-                  <select
-                    className="wp-select"
-                    value={props.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'}
-                    onChange={(e) => handleUpdate({ comparisonLabel: e.target.value })}
-                  >
-                    {COMPARISON_LABEL_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  <div className="wp-label">Custom Value (overrides metric)</div>
+                  <input
+                    className="wp-input"
+                    type="text"
+                    inputMode="decimal"
+                    value={props.metricValue ?? ''}
+                    placeholder="e.g. 47265 or 47,265"
+                    onChange={(e) => handleUpdate({ metricValue: e.target.value })}
+                  />
+                  <div className="wp-control-help" style={{ marginTop: 6 }}>
+                    Leave blank to use the selected metric. Enter any number to display it directly on the card.
+                  </div>
                 </div>
 
-                <div className="wp-row" style={{ marginTop: 12, marginBottom: 12 }}>
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Date / Comparison Label</div>
+                  <input
+                    className="wp-input"
+                    value={props.comparisonLabel || ''}
+                    placeholder="vs Apr 1 - Apr 30, 2025"
+                    onChange={(e) => handleUpdate({ comparisonLabel: e.target.value })}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {COMPARISON_LABEL_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className="wp-chip"
+                        onClick={() => handleUpdate({ comparisonLabel: option.value })}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="wp-row" style={{ marginTop: 12, marginBottom: 6 }}>
                   <span className="wp-row-label">Show comparison</span>
                   <div className={`prop-toggle${props.showComparison !== false ? ' on' : ''}`} onClick={() => handleUpdate({ showComparison: props.showComparison === false })} />
+                </div>
+
+                <div className="wp-row" style={{ marginBottom: 12 }}>
+                  <span className="wp-row-label">Show trend</span>
+                  <div className={`prop-toggle${props.showTrend !== false ? ' on' : ''}`} onClick={() => handleUpdate({ showTrend: props.showTrend === false })} />
                 </div>
 
                 <div className="wp-section" style={{ padding: '0', borderBottom: 'none' }}>
@@ -420,37 +620,121 @@ export default function LeftPanel({
                     ))}
                   </select>
                 </div>
+
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Trend % Override</div>
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="wp-input"
+                    value={props.trendValue ?? ''}
+                    placeholder="auto"
+                    onChange={(e) => handleUpdate({ trendValue: e.target.value })}
+                  />
+                  <div className="wp-control-help" style={{ marginTop: 6 }}>
+                    Positive value shows an upward green trend, negative shows a downward red trend.
+                  </div>
+                </div>
+
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Target Value (for progress bar)</div>
+                  <input
+                    type="number"
+                    className="wp-input"
+                    value={props.targetValue ?? ''}
+                    placeholder="e.g. 50000"
+                    onChange={(e) => handleUpdate({ targetValue: e.target.value })}
+                  />
+                  <div className="wp-control-help" style={{ marginTop: 6 }}>
+                    When set, a progress bar is shown indicating how close the value is to the target.
+                  </div>
+                </div>
+
+                <div className="wp-section" style={{ padding: '10px 0 0', borderBottom: 'none' }}>
+                  <div className="wp-label">Icon</div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(8, 1fr)',
+                      gap: 4,
+                      maxHeight: 156,
+                      overflowY: 'auto',
+                      padding: 4,
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      background: '#fafafa',
+                    }}
+                  >
+                    {Object.entries(CARD_ICON_LIBRARY).map(([key, { Icon, label }]) => {
+                      const active = (props.iconKey || '') === key
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          title={label}
+                          onClick={() => handleUpdate({ iconKey: key })}
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            display: 'grid',
+                            placeItems: 'center',
+                            border: active ? `1.5px solid ${props.iconColor || props.itemColor || '#3b82f6'}` : '1px solid transparent',
+                            borderRadius: 6,
+                            background: active ? '#eff6ff' : '#fff',
+                            cursor: 'pointer',
+                            color: active ? (props.iconColor || props.itemColor || '#3b82f6') : '#475467',
+                            padding: 0,
+                          }}
+                        >
+                          <Icon size={14} strokeWidth={2.1} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {props.iconKey && (
+                    <button
+                      type="button"
+                      className="wp-chip"
+                      style={{ marginTop: 6 }}
+                      onClick={() => handleUpdate({ iconKey: '' })}
+                    >
+                      Reset to default
+                    </button>
+                  )}
+                </div>
               </>
             )}
 
             {isChart && (
               <>
                 <div className="wp-section" style={{ padding: 0, borderBottom: 'none' }}>
-                  <div className="wp-control-help" style={{ marginTop: 0, marginBottom: 10 }}>
-                    Map the data fields used by the chart. The available axes change based on the selected chart type.
-                  </div>
+                  {chartMapping?.description && (
+                    <div className="wp-control-help" style={{ marginTop: 0, marginBottom: 10 }}>
+                      {chartMapping.description}
+                    </div>
+                  )}
                   <div className="wp-grid-2">
                     <div>
                       <div className="wp-label">X Axis</div>
                       <select
                         className="wp-select"
-                        value={props.xKey || ''}
+                        value={props.xKey || chartMapping?.x?.[0]?.value || ''}
                         onChange={(e) => handleUpdate({ xKey: e.target.value })}
                       >
-                        {chartXAxisOptions.map((axisKey) => (
-                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        {chartMapping?.x?.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <div className="wp-label">Y Axis</div>
+                      <div className="wp-label">Primary Metric (Y)</div>
                       <select
                         className="wp-select"
-                        value={props.yKey || ''}
+                        value={props.yKey || chartMapping?.y?.[0]?.value || ''}
                         onChange={(e) => handleUpdate({ yKey: e.target.value })}
                       >
-                        {chartYAxisOptions.map((axisKey) => (
-                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        {chartMapping?.y?.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </div>
@@ -458,14 +742,14 @@ export default function LeftPanel({
 
                   {chartMapping?.hasSecondary && (
                     <div style={{ marginTop: 10 }}>
-                      <div className="wp-label">Secondary Series</div>
+                      <div className="wp-label">Secondary Metric (Y2)</div>
                       <select
                         className="wp-select"
-                        value={props.yKey2 || ''}
+                        value={props.yKey2 || chartMapping?.y?.[1]?.value || ''}
                         onChange={(e) => handleUpdate({ yKey2: e.target.value })}
                       >
-                        {chartYAxisOptions.map((axisKey) => (
-                          <option key={axisKey} value={axisKey}>{axisKey}</option>
+                        {chartMapping?.y?.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </div>
@@ -479,16 +763,18 @@ export default function LeftPanel({
         {/* Primary Color */}
         <div className="wp-section" style={{ borderBottomColor: '#f2f4f7' }}>
           <div className="wp-grid-2">
+            {!isStat && (
             <div>
-              <div className="wp-label">{isStat ? 'Item color' : 'Color'}</div>
+              <div className="wp-label">Color</div>
               <input
                 type="color"
                 className="wp-input"
                 style={{ padding: '0 4px', height: '36px', cursor: 'pointer' }}
-                value={(isStat ? props.itemColor : props.color) || '#06b6d4'}
-                onChange={(e) => handleUpdate(isStat ? { itemColor: e.target.value, color: e.target.value } : { color: e.target.value })}
+                value={props.color || '#06b6d4'}
+                onChange={(e) => handleUpdate({ color: e.target.value })}
               />
             </div>
+            )}
             <div>
                <div className="wp-label">{isStat ? 'Icon color' : 'Secondary Color'}</div>
               <input
@@ -573,6 +859,55 @@ export default function LeftPanel({
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {isChart && props.showLegend !== false && (
+            <div style={{ marginTop: 12 }}>
+              <div className="wp-label">Legend Orientation</div>
+              <div className="wp-segmented" role="group" aria-label="Legend orientation">
+                {LEGEND_ORIENTATION_OPTIONS.map((option) => {
+                  const active = (props.legendOrientation || 'auto') === option.value
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={`wp-segmented__btn${active ? ' is-active' : ''}`}
+                      onClick={() => handleUpdate({ legendOrientation: option.value })}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {isChart && props.showLegend !== false && (
+            <div style={{ marginTop: 12 }}>
+              <div className="wp-label">
+                {(() => {
+                  const pos = props.legendPosition || 'bottom'
+                  return pos === 'left' || pos === 'right'
+                    ? 'Legend Alignment (Top / Middle / Bottom)'
+                    : 'Legend Alignment (Left / Center / Right)'
+                })()}
+              </div>
+              <div className="wp-segmented" role="group" aria-label="Legend alignment">
+                {LEGEND_ALIGN_OPTIONS.map((option) => {
+                  const active = (props.legendAlign || 'center') === option.value
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={`wp-segmented__btn${active ? ' is-active' : ''}`}
+                      onClick={() => handleUpdate({ legendAlign: option.value })}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
 
@@ -743,8 +1078,8 @@ export default function LeftPanel({
                 <input
                   type="number"
                   className="wp-input"
-                  value={props.innerRadius || 30}
-                  onChange={(e) => handleUpdate({ innerRadius: clampNumber(e.target.value, 0, 90, 30) })}
+                  value={props.innerRadius || 25}
+                  onChange={(e) => handleUpdate({ innerRadius: clampNumber(e.target.value, 0, 90, 25) })}
                 />
               </div>
               <div>
@@ -752,8 +1087,8 @@ export default function LeftPanel({
                 <input
                   type="number"
                   className="wp-input"
-                  value={props.outerRadius || 55}
-                  onChange={(e) => handleUpdate({ outerRadius: clampNumber(e.target.value, 10, 95, 55) })}
+                  value={props.outerRadius || 90}
+                  onChange={(e) => handleUpdate({ outerRadius: clampNumber(e.target.value, 10, 100, 90) })}
                 />
               </div>
             </div>
@@ -901,6 +1236,43 @@ export default function LeftPanel({
           </button>
         </div>
       </div>
+
+      {isStat && (
+        <div className={`wp-apply-bar${isDirty ? ' wp-apply-bar--dirty' : ''}`}>
+          <div className="wp-apply-bar__status">
+            {isDirty ? (
+              <>
+                <span className="wp-apply-bar__dot" />
+                <span>{Object.keys(draft).length} unsaved change{Object.keys(draft).length === 1 ? '' : 's'}</span>
+              </>
+            ) : (
+              <span className="wp-apply-bar__hint">All changes applied</span>
+            )}
+          </div>
+          <div className="wp-apply-bar__actions">
+            <button
+              type="button"
+              className="wp-btn wp-btn--ghost"
+              onClick={handleReset}
+              disabled={!isDirty}
+              title="Discard pending changes"
+            >
+              <RotateCcw size={13} />
+              Reset
+            </button>
+            <button
+              type="button"
+              className="wp-btn wp-btn--primary"
+              onClick={handleApply}
+              disabled={!isDirty}
+              title="Apply pending changes to the card"
+            >
+              <Check size={13} />
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

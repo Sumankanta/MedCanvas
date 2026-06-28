@@ -1,17 +1,25 @@
-import { Card, CardContent } from '@/components/ui/card'
+import DashboardCard from './DashboardCard'
 
-export default function StatCard({ label, value, delta, up }) {
+// Backwards-compatible wrapper that now delegates to the reusable
+// DashboardCard component. Legacy call sites pass { label, value, delta, up }.
+// New call sites can pass any DashboardCard prop directly.
+export default function StatCard({ label, value, delta, up, ...rest }) {
+  const legacyTrend =
+    typeof delta === 'string'
+      ? (Number(String(delta).replace(/[^0-9.\-]/g, '')) || 0) * (up ? 1 : -1)
+      : undefined
+
+  const numericValue =
+    typeof value === 'string'
+      ? Number(String(value).replace(/[^0-9.\-]/g, '')) || 0
+      : value
+
   return (
-    <Card>
-      <CardContent className="pt-4 pb-4">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-          {label}
-        </p>
-        <p className="text-2xl font-medium">{value}</p>
-        <p className={`text-xs mt-1 ${up ? 'text-green-600' : 'text-red-500'}`}>
-          {delta}
-        </p>
-      </CardContent>
-    </Card>
+    <DashboardCard
+      title={label ?? rest.title}
+      value={numericValue}
+      trend={rest.trend ?? legacyTrend ?? 0}
+      {...rest}
+    />
   )
 }

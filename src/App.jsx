@@ -5,6 +5,7 @@ import TopBar from './components/layout/TopBar'
 import LeftPanel from './components/layout/LeftPanel'
 import CanvasArea from './components/canvas/CanvasArea'
 import RightPanel from './components/layout/RightPanel'
+import PreviewShell from './components/preview/PreviewShell'
 import { useDashboardData } from './hooks/useDashboardData'
 
 let blockCounter = 0
@@ -103,7 +104,6 @@ function syncCountersFromSections(sections) {
   blockCounter = blockNums.length ? Math.max(...blockNums) : 0
 }
 
-// â”€â”€ Default props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DEFAULT_BLOCK_PROPS = {
   title: '',
   subtitle: '',
@@ -117,6 +117,8 @@ const DEFAULT_BLOCK_PROPS = {
   showDots: true,
   pieLabel: false,
   legendPosition: 'bottom',
+  legendOrientation: 'auto',
+  legendAlign: 'center',
   fontSize: 11,
   headingFontSize: 11,
   chartScale: 100,
@@ -186,39 +188,96 @@ function overlaps(a, b) {
   )
 }
 
+function isStatLikeType(type) {
+  return type === 'kpi-card' || (typeof type === 'string' && type.startsWith('stat-'))
+}
+
+function isFullWidthType(type) {
+  return type === 'table' || type === 'advanced-table' || type === 'pivot-table'
+}
+
 function findFreeSpot(existingBlocks, type) {
   const canvasWidth = 1120
-  const padding = 16
-  const gap = 12
-  const scanStep = 12
-  const size = defaultBlockSize(type)
-  const w = Math.max(180, size.width)
-  const h = Math.max(120, size.height)
+  const padding = 24   // matches packDesktopGrid
+  const colGap = 16
+  const rowGap = 20
 
-  const occupied = existingBlocks.map((b) => {
-    const s = defaultBlockSize(b.type)
-    return {
-      x: Number(b.props?.x ?? padding),
-      y: Number(b.props?.y ?? padding),
-      width: Number(b.props?.width ?? s.width),
-      height: Number(b.props?.height ?? s.height),
+  // ── Stat / KPI cards: wrap into rows along the top ──────────────────
+  if (isStatLikeType(type)) {
+    const size = defaultBlockSize(type)
+    const w = Math.max(140, size.width)
+    const h = Math.max(100, size.height)
+    const statBlocks = existingBlocks.filter((b) => isStatLikeType(b.type))
+    if (statBlocks.length === 0) return { x: padding, y: padding }
+    const sorted = [...statBlocks].sort((a, b) => {
+      const ay = Number(a.props?.y ?? padding)
+      const by = Number(b.props?.y ?? padding)
+      return ay !== by ? ay - by : Number(a.props?.x ?? padding) - Number(b.props?.x ?? padding)
+    })
+    // Place after the last stat card in the same row, or start a new row
+    const last = sorted[sorted.length - 1]
+    const lastX = Number(last.props?.x ?? padding)
+    const lastY = Number(last.props?.y ?? padding)
+    const lastW = Number(last.props?.width ?? size.width)
+    const lastH = Number(last.props?.height ?? h)
+    const nextX = lastX + lastW + colGap
+    if (nextX + w <= canvasWidth - padding) {
+      return { x: Math.round(nextX), y: lastY }
     }
-  })
-
-  const maxY = Math.max(
-    240,
-    ...occupied.map((o) => o.y + o.height + gap),
-  )
-
-  for (let y = padding; y <= maxY + 1600; y += scanStep) {
-    for (let x = padding; x <= Math.max(padding, canvasWidth - w - padding); x += scanStep) {
-      const candidate = { x, y, width: w, height: h }
-      const hit = occupied.some((o) => overlaps(candidate, o))
-      if (!hit) return { x, y }
-    }
+    // Start a new row below all existing stat cards
+    const bottomY = sorted.reduce((acc, b) => {
+      return Math.max(acc, Number(b.props?.y ?? padding) + Number(b.props?.height ?? h))
+    }, 0)
+    return { x: padding, y: Math.round(bottomY + rowGap) }
   }
 
-  return { x: padding, y: maxY + gap }
+  // ── Charts / tables: 3-column grid ─────────────────────────────────
+  const usable = canvasWidth - padding * 2          // 1072
+  const numCols = isFullWidthType(type) ? 1 : 3
+  const colW = Math.floor((usable - colGap * (numCols - 1)) / numCols)
+  const colXs = Array.from({ length: numCols }, (_, i) => padding + i * (colW + colGap))
+
+  // Where do stat cards end?
+  const statsBottom = existingBlocks
+    .filter((b) => isStatLikeType(b.type))
+    .reduce((acc, b) => {
+      const s = defaultBlockSize(b.type)
+      return Math.max(acc, Number(b.props?.y ?? padding) + Number(b.props?.height ?? s.height))
+    }, 0)
+  const startY = statsBottom > 0 ? statsBottom + rowGap : padding
+
+  // Simulate packing of existing chart blocks to find current column heights
+  const chartBlocks = existingBlocks.filter((b) => !isStatLikeType(b.type))
+  const colHeights = Array.from({ length: 3 }, () => startY)
+
+  const sortedCharts = [...chartBlocks].sort((a, b) => {
+    const ay = Number(a.props?.y ?? startY)
+    const by = Number(b.props?.y ?? startY)
+    return ay !== by ? ay - by : Number(a.props?.x ?? padding) - Number(b.props?.x ?? padding)
+  })
+  for (const b of sortedCharts) {
+    const bx = Number(b.props?.x ?? padding)
+    const bh = Number(b.props?.height ?? 300)
+    const by = Number(b.props?.y ?? startY)
+    // Assign to nearest column
+    let col = 0
+    let minDist = Infinity
+    for (let i = 0; i < 3; i++) {
+      const dist = Math.abs(bx - (padding + i * (Math.floor((usable - colGap * 2) / 3) + colGap)))
+      if (dist < minDist) { minDist = dist; col = i }
+    }
+    colHeights[col] = Math.max(colHeights[col], by + bh + rowGap)
+  }
+
+  if (isFullWidthType(type)) {
+    // Full-width: place below all columns
+    const y = Math.max(...colHeights)
+    return { x: padding, y: Math.round(y), width: usable }
+  }
+
+  // Place in the shortest column
+  const col = colHeights.indexOf(Math.min(...colHeights))
+  return { x: colXs[col], y: Math.round(colHeights[col]), width: colW }
 }
 
 function findDuplicateSpot(existingBlocks, originalBlock) {
@@ -354,29 +413,25 @@ function createTemplateSections(templateId) {
   s1.blocks = [
     chart('stat-total', 12, 16, 194, 120, 'Total Patients Screened', {
       metricKey: 'totalScreened',
-      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
       dataSource: 'patient-screening-summary',
     }),
     chart('stat-tests', 214, 16, 194, 120, 'Tests Conducted', {
       metricKey: 'testsTotal',
-      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
       dataSource: 'patient-screening-summary',
     }),
     chart('stat-positive', 416, 16, 194, 120, 'Positive Cases', {
       metricKey: 'oralCancer',
-      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
       dataSource: 'patient-screening-summary',
     }),
     chart('stat-locations', 618, 16, 194, 120, 'Referred', {
       metricKey: 'locations',
-      comparisonLabel: 'vs Apr 1 - Apr 30, 2025',
       dataSource: 'patient-screening-summary',
     }),
   ]
   return [s1]
 }
 
-// â”€â”€ Flat block lookup helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Flat block lookup helpers
 function allBlocks(sections) {
   return sections.flatMap((s) => s.blocks || [])
 }
@@ -393,7 +448,7 @@ function findSectionForBlock(sections, blockId) {
   return sections.find((s) => (s.blocks || []).some((b) => b.id === blockId)) || null
 }
 
-// â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// App
 export default function App() {
   const { data, loading, lastUpdated, refetch, isRefreshing } = useDashboardData()
 
@@ -485,10 +540,9 @@ export default function App() {
   const handleResponsiveModeChange = useCallback((mode) => {
     setPreviewMode(mode)
     setZoom(100)
-    if (mode === 'mobile') {
-      setLeftOpen(false)
-      setRightOpen(false)
-    }
+    // Keep the Widgets and Properties panels accessible in every simulated
+    // device view (desktop/tablet/mobile). The user can toggle them manually
+    // from the top bar if they need more canvas room.
   }, [])
 
   const setDashboardTitle = useCallback((newTitle) => {
@@ -513,7 +567,7 @@ export default function App() {
     }
   }, [dashboardState])
 
-  // â”€â”€ History Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // History Helpers 
   const pushState = useCallback((newSections) => {
     setDashboardState((prev) => {
       const truncated = prev.history.slice(0, prev.index + 1)
@@ -551,7 +605,7 @@ export default function App() {
     })
   }, [])
 
-  // â”€â”€ Section operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Section operations 
   const addSection = useCallback((blockType = null) => {
     const section = makeSection('', blockType)
     setDashboardState((prev) => {
@@ -629,7 +683,7 @@ export default function App() {
     })
   }, [])
 
-  // â”€â”€ Block operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Block operations 
   const addBlockToSection = useCallback((sectionId, type, _colIndex = 0, initialPos = null) => {
     void _colIndex
     setDashboardState((prev) => {
@@ -638,17 +692,35 @@ export default function App() {
         if (s.id !== sectionId) return s
         const colSpanMap = s.colSpanMap || {}
         const blocks = s.blocks || []
-        const autoPos = initialPos && typeof initialPos === 'object'
-          ? {
-            x: Number(initialPos.x ?? 16),
-            y: Number(initialPos.y ?? 16),
-          }
-          : findFreeSpot(blocks, type)
+        // Always compute a free desktop slot. If `initialPos` was provided
+        // (e.g. from a tablet/mobile drop), only honour it when it doesn't
+        // collide with an existing widget at desktop coordinates — otherwise
+        // small mobile/tablet drop coords would pile widgets on top of each
+        // other when the user switches back to desktop.
+        const freeSpot = findFreeSpot(blocks, type)
+        let autoPos = freeSpot
+        if (initialPos && typeof initialPos === 'object') {
+          const candX = Number(initialPos.x ?? 16)
+          const candY = Number(initialPos.y ?? 16)
+          const sz = defaultBlockSize(type)
+          const candidate = { x: candX, y: candY, width: sz.width, height: sz.height }
+          const collides = blocks.some((b) => {
+            const bs = defaultBlockSize(b.type)
+            return overlaps(candidate, {
+              x: Number(b.props?.x ?? 16),
+              y: Number(b.props?.y ?? 16),
+              width: Number(b.props?.width ?? bs.width),
+              height: Number(b.props?.height ?? bs.height),
+            })
+          })
+          if (!collides) autoPos = { x: candX, y: candY }
+        }
 
         newBlock.props = {
           ...newBlock.props,
           x: autoPos.x,
           y: autoPos.y,
+          ...(autoPos.width != null ? { width: autoPos.width } : {}),
         }
 
         const newColSpanMap = { ...colSpanMap, [newBlock.id]: { col: 0, colSpan: 6 } }
@@ -898,7 +970,7 @@ export default function App() {
     });
   }, []);
 
-  // â”€â”€ Clear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Clear 
   const clearCanvas = useCallback(() => {
     resetSectionCounter()
     blockCounter = 0
@@ -1008,7 +1080,7 @@ export default function App() {
     URL.revokeObjectURL(url)
   }, [data.patientTableData])
 
-  // â”€â”€ Keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Keyboard 
   const handleKeyDown = useCallback((e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo() }
     if ((e.metaKey || e.ctrlKey) && e.key === 'y') { e.preventDefault(); redo() }
@@ -1016,7 +1088,7 @@ export default function App() {
     if (e.key === 'Escape') { setSelectedId(null) }
   }, [undo, redo, selectedId, removeBlock])
 
-  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Derived 
   const selectedBlock = selectedId ? findBlock(sections, selectedId) : null
   const selectedSection = selectedId ? findSectionForBlock(sections, selectedId) : null
   const selectedSectionCols = selectedSection?.cols ?? cols
@@ -1073,66 +1145,105 @@ export default function App() {
         onDownloadPatientData={downloadPatientData}
       />
 
-      <div className={`workspace${(leftOpen && !isPreviewMode) ? '' : ' left-hidden'}${(rightOpen && !isPreviewMode) ? '' : ' right-hidden'}`}>
-        <RightPanel
-          side="left"
-          open={leftOpen && !isPreviewMode}
-          variables={data.statVariables}
-          onAddBlock={(type) => {
-            if (sections.length === 0) {
-              addSection(type)
-            } else {
-              addBlockToSection(sections[sections.length - 1].id, type)
-            }
-          }}
-          onClose={() => setLeftOpen(false)}
-        />
-
-        <CanvasArea
-          sections={sections}
-          setSections={(s) => pushState(s)}
-          data={data}
-          isPreviewMode={isPreviewMode}
-          selectedId={selectedId}
-          dashboardTitle={title}
-          dashboardSubtitle={subtitle}
-          onUpdateDashboardTitle={setDashboardTitle}
-          onUpdateDashboardSubtitle={setDashboardSubtitle}
-          isPreviewMode={isPreviewMode}
-          onUpdateBlock={updateBlockProps}
-          onSelect={setSelectedId}
-          onRemoveBlock={removeBlock}
-          onDuplicateBlock={duplicateBlock}
-          onAddSection={addSection}
-          onRemoveSection={removeSection}
-          onUpdateSection={updateSection}
-          onReorderSections={reorderSections}
-          onAddBlockToSection={addBlockToSection}
-          onReorderBlocksInSection={reorderBlocksInSection}
-          moveBlockBetweenSections={moveBlockBetweenSections}
-          cols={cols}
-          zoom={zoom}
-          onZoom={setZoom}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={index > 0}
-          canRedo={index < history.length - 1}
+      {isPreviewMode ? (
+        <PreviewShell
           responsiveMode={responsiveMode}
           onResponsiveModeChange={handleResponsiveModeChange}
-        />
+          data={data}
+        >
+          <CanvasArea
+            sections={sections}
+            setSections={(s) => pushState(s)}
+            data={data}
+            isPreviewMode={isPreviewMode}
+            selectedId={selectedId}
+            dashboardTitle={title}
+            dashboardSubtitle={subtitle}
+            onUpdateDashboardTitle={setDashboardTitle}
+            onUpdateDashboardSubtitle={setDashboardSubtitle}
+            onUpdateBlock={updateBlockProps}
+            onSelect={setSelectedId}
+            onRemoveBlock={removeBlock}
+            onDuplicateBlock={duplicateBlock}
+            onAddSection={addSection}
+            onRemoveSection={removeSection}
+            onUpdateSection={updateSection}
+            onReorderSections={reorderSections}
+            onAddBlockToSection={addBlockToSection}
+            onReorderBlocksInSection={reorderBlocksInSection}
+            moveBlockBetweenSections={moveBlockBetweenSections}
+            cols={cols}
+            zoom={100}
+            onZoom={setZoom}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={index > 0}
+            canRedo={index < history.length - 1}
+            responsiveMode={responsiveMode}
+            onResponsiveModeChange={handleResponsiveModeChange}
+          />
+        </PreviewShell>
+      ) : (
+        <div className={`workspace${leftOpen ? '' : ' left-hidden'}${rightOpen ? '' : ' right-hidden'}`}>
+          <RightPanel
+            side="left"
+            open={leftOpen}
+            variables={data.statVariables}
+            onAddBlock={(type) => {
+              if (sections.length === 0) {
+                addSection(type)
+              } else {
+                addBlockToSection(sections[sections.length - 1].id, type)
+              }
+            }}
+            onClose={() => setLeftOpen(false)}
+          />
 
-        <LeftPanel
-          side="right"
-          open={rightOpen && !isPreviewMode}
-          selectedBlock={selectedBlock}
-          cols={selectedSectionCols}
-          onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}
-          onRemoveBlock={() => selectedId && removeBlock(selectedId)}
-          onUpdateSection={(patch) => selectedSection && updateSection(selectedSection.id, patch)}
-          selectedSection={selectedSection}
-          onClose={() => setRightOpen(false)}
-        />
-      </div>
+          <CanvasArea
+            sections={sections}
+            setSections={(s) => pushState(s)}
+            data={data}
+            isPreviewMode={isPreviewMode}
+            selectedId={selectedId}
+            dashboardTitle={title}
+            dashboardSubtitle={subtitle}
+            onUpdateDashboardTitle={setDashboardTitle}
+            onUpdateDashboardSubtitle={setDashboardSubtitle}
+            onUpdateBlock={updateBlockProps}
+            onSelect={setSelectedId}
+            onRemoveBlock={removeBlock}
+            onDuplicateBlock={duplicateBlock}
+            onAddSection={addSection}
+            onRemoveSection={removeSection}
+            onUpdateSection={updateSection}
+            onReorderSections={reorderSections}
+            onAddBlockToSection={addBlockToSection}
+            onReorderBlocksInSection={reorderBlocksInSection}
+            moveBlockBetweenSections={moveBlockBetweenSections}
+            cols={cols}
+            zoom={zoom}
+            onZoom={setZoom}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={index > 0}
+            canRedo={index < history.length - 1}
+            responsiveMode={responsiveMode}
+            onResponsiveModeChange={handleResponsiveModeChange}
+          />
+
+          <LeftPanel
+            side="right"
+            open={rightOpen}
+            selectedBlock={selectedBlock}
+            cols={selectedSectionCols}
+            onUpdateBlock={(patch) => selectedId && updateBlockProps(selectedId, patch)}
+            onRemoveBlock={() => selectedId && removeBlock(selectedId)}
+            onUpdateSection={(patch) => selectedSection && updateSection(selectedSection.id, patch)}
+            selectedSection={selectedSection}
+            onClose={() => setRightOpen(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

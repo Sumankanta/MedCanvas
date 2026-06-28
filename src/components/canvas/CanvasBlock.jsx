@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
@@ -7,7 +8,10 @@ import {
 import {
   Copy, Pencil, X, TrendingUp, TrendingDown, Minus, GripVertical, MoreVertical, Trash,
   Users, FlaskConical, ClipboardList, UserRound,
+  Search, ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react'
+import { getCardIcon } from '@/lib/cardIcons'
+import { useCountUp } from '@/hooks/useCountUp'
 
 const BASE_COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#f97316', '#a78bfa']
 const TOOLTIP_PROPS = {
@@ -75,8 +79,13 @@ const CFG = {
   'chart-hbar': { title: 'Horizontal Bar', subtitle: 'Ranked metrics', color: '#60a5fa' },
 }
 
-function axisProps(fontSize) {
-  return { fontSize: Math.max(8, fontSize - 1), fill: '#64748b' }
+function axisProps(fontSize, fontFamily, fontWeight) {
+  return {
+    fontSize: Math.max(8, fontSize - 1),
+    fill: '#64748b',
+    fontFamily,
+    fontWeight,
+  }
 }
 
 function clamp(n, min, max) {
@@ -84,8 +93,11 @@ function clamp(n, min, max) {
 }
 
 function toWeight(weight) {
-  if (weight.includes('700')) return 700
-  if (weight.includes('500')) return 500
+  if (typeof weight === 'number' && Number.isFinite(weight)) return clamp(weight, 300, 800)
+  const value = String(weight || '').toLowerCase()
+  if (value.includes('700') || value.includes('bold')) return 700
+  if (value.includes('600') || value.includes('semi')) return 600
+  if (value.includes('500') || value.includes('medium')) return 500
   return 400
 }
 
@@ -148,36 +160,135 @@ function buildLegendItems(type, opts, xKey, yKey, yKey2, extraYKeys, extraYLabel
     return items
   }
 
+  if (type === 'chart-radialbar') {
+    const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
+    ;(Array.isArray(data) ? data : []).forEach((item, index) => {
+      const label = item[xKey] || item.name || item.label || `Item ${index + 1}`
+      const color = palette[index % palette.length]
+      addItem(`${label}-${index}`, label, color)
+    })
+    return items
+  }
+
   addItem(yKey, yKey, opts.color)
   addItem(yKey2, yKey2, opts.series2Color)
   extraYKeys.forEach((key, index) => addItem(key, extraYLabels[index] || key, extraYColors[index]))
   return items
 }
 
-function renderLegendBlock(items, position = 'bottom', chartFontSize = 11) {
+function renderLegendBlock(items, position = 'bottom', chartFontSize = 11, orientation = 'auto', align = 'center', fontFamily, fontWeight) {
   if (!items.length) return null
-  const vertical = position === 'left' || position === 'right'
   const isSide = position === 'left' || position === 'right'
+  const resolved = orientation === 'auto'
+    ? (isSide ? 'vertical' : 'horizontal')
+    : orientation
+  const vertical = resolved === 'vertical'
+  // Side + horizontal is a special combo: a small horizontal pill sitting
+  // on the left or right edge of the chart. It uses row layout but allows
+  // wrapping so multiple items stay readable in a narrow column.
+  const sideHorizontal = isSide && !vertical
+  // Map alignment along the legend's main axis.
+  // - top/bottom (row):    start=left,  center=center, end=right
+  // - left/right vertical: start=top,   center=middle, end=bottom
+  // - left/right horizontal pill: align the wrapped row vertically
+  //   inside the side column (top/middle/bottom).
+  const alignMap = { start: 'flex-start', center: 'center', end: 'flex-end' }
+  const mainAlign = alignMap[align] || 'center'
+
+  // Side legends render as a clean vertical list along the chart edge.
+  // We use writing-mode (instead of transform) so the layout box also
+  // rotates and items don't overlap each other.
+  // - left  side: text reads bottom-to-top  (vertical-rl + 180° flip)
+  // - right side: text reads top-to-bottom  (vertical-rl)
+  const sideVertical = isSide && vertical
+  const itemWritingMode = sideVertical ? 'vertical-rl' : 'horizontal-tb'
+  const itemFlipped = sideVertical && position === 'left'
+  const itemMainAxis = sideVertical
+    ? 'center'
+    : (sideHorizontal ? 'center' : 'center')
+
   const style = {
     display: 'flex',
     flexDirection: vertical ? 'column' : 'row',
-    flexWrap: vertical ? 'nowrap' : 'wrap',
-    alignItems: vertical ? 'flex-start' : 'center',
-    justifyContent: vertical ? 'center' : 'center',
-    gap: vertical ? 6 : 12,
-    padding: vertical ? '2px 0' : '2px 6px',
-    width: isSide ? 124 : '100%',
-    minWidth: isSide ? 112 : 'auto',
-    maxWidth: isSide ? 140 : '100%',
+    flexWrap: sideHorizontal ? 'wrap' : 'nowrap',
+    // Inner item alignment — kept centered; the LEGEND BLOCK itself is
+    // positioned via alignSelf below, which is what the user's alignment
+    // control actually drives.
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignContent: 'center',
+    gap: vertical ? (sideVertical ? 10 : 4) : (sideHorizontal ? 6 : 12),
+    padding: isSide
+      ? (sideVertical ? '6px 4px' : '4px 4px')
+      : '4px 6px',
+    // Always size the legend to its content along the shell's cross axis,
+    // so alignSelf can place it at start / center / end on the chart edge.
+    // - top/bottom (column shell): cross axis = horizontal → width auto
+    // - left/right (row shell):    cross axis = vertical   → height auto
+    width: isSide ? 'auto' : 'auto',
+    height: isSide ? 'fit-content' : 'auto',
+    minWidth: 0,
+    minHeight: 0,
+    // Cap side+horizontal pill width so the wrapped row doesn't eat the chart.
+    maxWidth: sideHorizontal ? 110 : '100%',
+    flexShrink: 0,
     overflow: 'hidden',
+    // Position the legend block along the chart edge:
+    // - top/bottom: alignSelf controls horizontal placement (start/center/end → L/C/R)
+    // - left/right: alignSelf controls vertical placement (start/center/end → T/M/B)
+    alignSelf: mainAlign,
+    textAlign: 'center',
   }
 
   return (
-    <div className={`chart-legend chart-legend--${position}`} style={style}>
+    <div className={`chart-legend chart-legend--${position} chart-legend--${resolved}`} style={style}>
       {items.map((item) => (
-        <div key={item.key} className="chart-legend__item" style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 999, background: item.color, flexShrink: 0 }} />
-          <span style={{ fontSize: Math.max(9, chartFontSize - 1), color: '#475467', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div
+          key={item.key}
+          className="chart-legend__item"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: itemMainAxis,
+            gap: sideVertical ? 4 : 6,
+            minWidth: 0,
+            width: 'auto',
+            // Hard-lock each rotated item to its content size so the
+            // column flex layout can't stretch them apart.
+            flex: '0 0 auto',
+            blockSize: 'fit-content',
+            inlineSize: 'fit-content',
+            // Vertical writing-mode rotates both the text and the layout
+            // box, so stacked items don't overlap each other.
+            writingMode: itemWritingMode,
+            // Flip 180deg for the left side so the label reads
+            // bottom-to-top (the conventional Y-axis title orientation).
+            transform: itemFlipped ? 'rotate(180deg)' : 'none',
+            whiteSpace: 'nowrap',
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          <span style={{
+            width: sideVertical ? 6 : 8,
+            height: sideVertical ? 6 : 8,
+            borderRadius: 999,
+            background: item.color,
+            flexShrink: 0,
+            display: 'inline-block',
+          }} />
+          <span style={{
+            fontSize: Math.max(8, chartFontSize),
+            color: item.color,
+            fontFamily,
+            fontWeight: fontWeight || 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            lineHeight: 1.1,
+            margin: 0,
+            padding: 0,
+          }}>
             {item.label}
           </span>
         </div>
@@ -186,34 +297,40 @@ function renderLegendBlock(items, position = 'bottom', chartFontSize = 11) {
   )
 }
 
-function wrapChartWithLegend(chartNode, items, position = 'bottom', chartFontSize = 11) {
+function wrapChartWithLegend(chartNode, items, position = 'bottom', chartFontSize = 11, orientation = 'auto', align = 'center', fontFamily, fontWeight) {
   if (!items.length) return chartNode
-  const sideLegend = position === 'left' || position === 'right'
+  const isSide = position === 'left' || position === 'right'
+  // Whenever the legend is on the left/right, the shell is a row so the
+  // legend (regardless of its own orientation) sits beside the chart.
+  // top/bottom keep the historical column shell.
+  const useRowShell = isSide
+  const showLegendOnTop = position === 'top'
+  const showLegendOnBottom = position === 'bottom'
 
   return (
     <div
-      className={`chart-shell chart-shell--${position}`}
+      className={`chart-shell chart-shell--${position} chart-shell--${orientation === 'auto' ? (isSide ? 'vertical' : 'horizontal') : orientation}`}
       style={{
         display: 'flex',
-        flexDirection: sideLegend ? 'row' : 'column',
+        flexDirection: useRowShell ? 'row' : 'column',
         alignItems: 'stretch',
         justifyContent: 'stretch',
         width: '100%',
         height: '100%',
         minWidth: 0,
         minHeight: 0,
-        gap: sideLegend ? 10 : 6,
-        padding: '2px 2px 0',
+        gap: useRowShell ? 2 : 4,
+        padding: useRowShell ? '4px 4px 6px' : '2px 6px 12px',
         overflow: 'hidden',
       }}
     >
-      {position === 'top' && renderLegendBlock(items, position, chartFontSize)}
-      {sideLegend && position === 'left' && renderLegendBlock(items, position, chartFontSize)}
-      <div className="chart-shell__plot" style={{ flex: 1, minWidth: 0, minHeight: 0, width: '100%', height: '100%' }}>
+      {showLegendOnTop && renderLegendBlock(items, position, chartFontSize, orientation, align, fontFamily, fontWeight)}
+      {useRowShell && position === 'left' && renderLegendBlock(items, position, chartFontSize, orientation, align, fontFamily, fontWeight)}
+      <div className="chart-shell__plot" style={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, width: '100%', height: '100%' }}>
         {chartNode}
       </div>
-      {sideLegend && position === 'right' && renderLegendBlock(items, position, chartFontSize)}
-      {position === 'bottom' && renderLegendBlock(items, position, chartFontSize)}
+      {useRowShell && position === 'right' && renderLegendBlock(items, position, chartFontSize, orientation, align, fontFamily, fontWeight)}
+      {showLegendOnBottom && renderLegendBlock(items, position, chartFontSize, orientation, align, fontFamily, fontWeight)}
     </div>
   )
 }
@@ -278,39 +395,418 @@ function seriesOptions(type) {
   }
 }
 
-function renderStatBlock(type, data, props) {
+// --- Advanced Table -------------------------------------------------------
+// Searchable, sortable patient drive table with status badges per row.
+function AdvancedTable({ rows = [], fontSize = 11 }) {
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState({ key: 'date', dir: 'desc' })
+  const [page, setPage] = useState(1)
+  const pageSize = 5
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((r) =>
+      String(r.name || '').toLowerCase().includes(q) ||
+      String(r.location || '').toLowerCase().includes(q),
+    )
+  }, [rows, query])
+
+  const sorted = useMemo(() => {
+    const list = [...filtered]
+    const { key, dir } = sort
+    list.sort((a, b) => {
+      let av = a[key]
+      let bv = b[key]
+      if (key === 'date') { av = a.dateISO || a.date; bv = b.dateISO || b.date }
+      if (typeof av === 'number' && typeof bv === 'number') return dir === 'asc' ? av - bv : bv - av
+      av = String(av ?? '').toLowerCase()
+      bv = String(bv ?? '').toLowerCase()
+      if (av < bv) return dir === 'asc' ? -1 : 1
+      if (av > bv) return dir === 'asc' ? 1 : -1
+      return 0
+    })
+    return list
+  }, [filtered, sort])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const pageData = sorted.slice((safePage - 1) * pageSize, safePage * pageSize)
+
+  const toggleSort = (key) => {
+    setSort((prev) => prev.key === key
+      ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: 'asc' })
+    setPage(1)
+  }
+
+  const SortIcon = ({ k }) => {
+    if (sort.key !== k) return <ArrowUpDown size={11} style={{ opacity: 0.4 }} />
+    return sort.dir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />
+  }
+
+  const statusFor = (row) => {
+    const screened = Number(row.screened) || 0
+    const positive = Number(row.positive) || 0
+    const ratio = screened > 0 ? (positive / screened) * 100 : 0
+    if (ratio >= 12) return { label: 'Critical', bg: '#fee2e2', fg: '#b91c1c' }
+    if (ratio >= 7)  return { label: 'Moderate', bg: '#fef3c7', fg: '#b45309' }
+    return { label: 'Stable', bg: '#dcfce7', fg: '#15803d' }
+  }
+
+  const cols = [
+    { key: 'name', label: 'Drive Name' },
+    { key: 'location', label: 'Location' },
+    { key: 'date', label: 'Date' },
+    { key: 'screened', label: 'Screened' },
+    { key: 'positive', label: 'Positive' },
+    { key: 'referred', label: 'Referred' },
+  ]
+
+  return (
+    <div className="pt-wrap">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ position: 'relative', flex: '1 1 auto' }}>
+          <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+            placeholder="Search by drive or location..."
+            style={{
+              width: '100%', padding: '5px 8px 5px 26px',
+              fontSize: Math.max(10, fontSize - 1),
+              border: '1px solid #e2e8f0', borderRadius: 6, outline: 'none',
+              background: '#fff', color: '#334155',
+            }}
+          />
+        </div>
+        <span style={{ fontSize: Math.max(9, fontSize - 2), color: '#64748b', whiteSpace: 'nowrap' }}>
+          {sorted.length} result{sorted.length === 1 ? '' : 's'}
+        </span>
+      </div>
+      <table className="pt-table" style={{ fontSize: Math.max(9, fontSize - 1) }}>
+        <thead>
+          <tr>
+            {cols.map((c) => (
+              <th
+                key={c.key}
+                onClick={() => toggleSort(c.key)}
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {c.label} <SortIcon k={c.key} />
+                </span>
+              </th>
+            ))}
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pageData.map((p, i) => {
+            const s = statusFor(p)
+            return (
+              <tr key={p.id || i}>
+                <td style={{ color: '#1e40af', fontWeight: 500 }}>{p.name}</td>
+                <td>{p.location}</td>
+                <td>{p.date}</td>
+                <td>{p.screened?.toLocaleString()}</td>
+                <td>{p.positive}</td>
+                <td>{p.referred}</td>
+                <td>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: s.bg, color: s.fg,
+                    padding: '2px 8px', borderRadius: 999,
+                    fontSize: Math.max(9, fontSize - 2), fontWeight: 600,
+                  }}>{s.label}</span>
+                </td>
+              </tr>
+            )
+          })}
+          {pageData.length === 0 && (
+            <tr><td colSpan={cols.length + 1} style={{ textAlign: 'center', color: '#94a3b8', padding: 16 }}>No matching drives</td></tr>
+          )}
+        </tbody>
+      </table>
+      <div className="pt-pagination">
+        <span className="pt-page-info">
+          Showing {(safePage - 1) * pageSize + 1} to {Math.min(safePage * pageSize, sorted.length)} of {sorted.length} drives
+        </span>
+        <div className="pt-page-btns">
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+            const n = i + 1
+            return (
+              <button
+                key={n}
+                className={`pt-page-btn${n === safePage ? ' active' : ''}`}
+                onClick={() => setPage(n)}
+              >{n}</button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Basic Table ----------------------------------------------------------
+// Patient drive list with working pagination.
+function BasicTable({ rows = [], fontSize = 11 }) {
+  const [page, setPage] = useState(1)
+  const pageSize = 5
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const startIndex = (safePage - 1) * pageSize
+  const pageData = rows.slice(startIndex, startIndex + pageSize)
+
+  return (
+    <div className="pt-wrap">
+      <table className="pt-table" style={{ fontSize: Math.max(9, fontSize - 1) }}>
+        <thead>
+          <tr>{['Drive Name', 'Location', 'Date', 'Patients Screened', 'Positive Cases', 'Referred', 'Actions'].map((h) => <th key={h}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {pageData.map((p, i) => (
+            <tr key={p.id || startIndex + i}>
+              <td style={{ color: '#1e40af', fontWeight: 500 }}>{p.name}</td>
+              <td>{p.location}</td>
+              <td>{p.date}</td>
+              <td>{p.screened?.toLocaleString()}</td>
+              <td>{p.positive}</td>
+              <td>{p.referred}</td>
+              <td><span style={{ cursor: 'pointer', color: '#64748b' }}>👁</span></td>
+            </tr>
+          ))}
+          {pageData.length === 0 && (
+            <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 16 }}>No data</td></tr>
+          )}
+        </tbody>
+      </table>
+      <div className="pt-pagination">
+        <span className="pt-page-info">
+          Showing {rows.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + pageSize, rows.length)} of {rows.length} drives
+        </span>
+        <div className="pt-page-btns">
+          <button
+            className="pt-page-btn"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            style={{ opacity: safePage <= 1 ? 0.4 : 1, cursor: safePage <= 1 ? 'not-allowed' : 'pointer' }}
+          >‹</button>
+          {Array.from({ length: totalPages }, (_, i) => {
+            const n = i + 1
+            return (
+              <button
+                key={n}
+                className={`pt-page-btn${n === safePage ? ' active' : ''}`}
+                onClick={() => setPage(n)}
+              >{n}</button>
+            )
+          })}
+          <button
+            className="pt-page-btn"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            style={{ opacity: safePage >= totalPages ? 0.4 : 1, cursor: safePage >= totalPages ? 'not-allowed' : 'pointer' }}
+          >›</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Pivot Table ----------------------------------------------------------
+// Aggregates patient table rows by State (the part after the comma in
+// `location`) and shows totals + average positivity rate.
+function PivotTable({ rows = [], fontSize = 11 }) {
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const row of rows) {
+      const parts = String(row.location || 'Unknown').split(',')
+      const state = (parts[1] || parts[0] || 'Unknown').trim() || 'Unknown'
+      const entry = map.get(state) || { state, drives: 0, screened: 0, positive: 0, referred: 0 }
+      entry.drives += 1
+      entry.screened += Number(row.screened) || 0
+      entry.positive += Number(row.positive) || 0
+      entry.referred += Number(row.referred) || 0
+      map.set(state, entry)
+    }
+    return Array.from(map.values()).sort((a, b) => b.screened - a.screened)
+  }, [rows])
+
+  const totals = useMemo(() => groups.reduce((acc, g) => ({
+    drives: acc.drives + g.drives,
+    screened: acc.screened + g.screened,
+    positive: acc.positive + g.positive,
+    referred: acc.referred + g.referred,
+  }), { drives: 0, screened: 0, positive: 0, referred: 0 }), [groups])
+
+  const rate = (p, s) => (s > 0 ? ((p / s) * 100).toFixed(1) : '0.0')
+
+  return (
+    <div className="pt-wrap">
+      <table className="pt-table" style={{ fontSize: Math.max(9, fontSize - 1) }}>
+        <thead>
+          <tr>
+            <th>State / Region</th>
+            <th>Drives</th>
+            <th>Screened</th>
+            <th>Positive</th>
+            <th>Referred</th>
+            <th>Positive %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((g) => (
+            <tr key={g.state}>
+              <td style={{ color: '#1e40af', fontWeight: 500 }}>{g.state}</td>
+              <td>{g.drives}</td>
+              <td>{g.screened.toLocaleString()}</td>
+              <td>{g.positive.toLocaleString()}</td>
+              <td>{g.referred.toLocaleString()}</td>
+              <td>{rate(g.positive, g.screened)}%</td>
+            </tr>
+          ))}
+          {groups.length === 0 && (
+            <tr><td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: 16 }}>No data</td></tr>
+          )}
+        </tbody>
+        {groups.length > 0 && (
+          <tfoot>
+            <tr style={{ background: '#f8fafc', fontWeight: 600 }}>
+              <td>Total</td>
+              <td>{totals.drives}</td>
+              <td>{totals.screened.toLocaleString()}</td>
+              <td>{totals.positive.toLocaleString()}</td>
+              <td>{totals.referred.toLocaleString()}</td>
+              <td>{rate(totals.positive, totals.screened)}%</td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+      <div className="pt-pagination">
+        <span className="pt-page-info">Aggregated across {rows.length} drives in {groups.length} region{groups.length === 1 ? '' : 's'}</span>
+      </div>
+    </div>
+  )
+}
+
+function StatBlock({ type, data, props, scale = 1 }) {
   const meta = STAT_META[type] || STAT_META['stat-total']
   if (!meta) return null
   const metricKey = props.metricKey || meta.dataKey
   const varEntry = data?.statVariables?.find((v) => v.key === metricKey) || data?.statVariables?.find((v) => v.key === meta.dataKey)
-  const value = varEntry?.value ?? 0
+  const rawValue = varEntry?.value ?? 0
   const color = props.itemColor || props.color || meta.defaultColor
   const iconColor = props.iconColor || color
-  const trend = meta.trend
-  const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
-  const trendColor = type === 'stat-positive' || trend < 0 ? (props.decreaseColor || '#dc2626') : (props.increaseColor || '#16a34a')
-  const Icon = meta.icon
-  const useManualValue = !props.metricKey && props.metricValue
-  const displayValue = useManualValue ? props.metricValue : formatMetricValue(value, props.numberFormat || 'comma', props.suffix || '')
-  const comparisonLabel = props.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'
-  const valueDelta = props.metricDelta || formatComparisonValue(trend, props.comparisonFormat || 'percentage')
+
+  // Allow user to override trend value/direction inline.
+  const overrideTrend = props.trendValue !== undefined && props.trendValue !== ''
+    ? Number(props.trendValue)
+    : null
+  const trendNum = overrideTrend !== null
+    ? overrideTrend
+    : (type === 'stat-positive' ? -Math.abs(meta.trend) : meta.trend)
+
+  const TrendIcon = trendNum > 0 ? TrendingUp : trendNum < 0 ? TrendingDown : Minus
+  const trendColor = trendNum < 0 ? (props.decreaseColor || '#dc2626') : (props.increaseColor || '#16a34a')
+
+  // Icon resolution: user-picked iconKey wins, otherwise the meta default.
+  const Icon = props.iconKey ? getCardIcon(props.iconKey, meta.icon) : meta.icon
+
+  // Animated count-up for the numeric value.
+  // A non-empty `metricValue` always wins over the dropdown-selected metric,
+  // so the user can type any custom number into the panel.
+  const hasManualValue = props.metricValue !== undefined && props.metricValue !== null && String(props.metricValue).trim() !== ''
+  const parsedManual = hasManualValue
+    ? Number(String(props.metricValue).replace(/[^0-9.\-]/g, ''))
+    : NaN
+  const manualIsNumeric = hasManualValue && !Number.isNaN(parsedManual)
+  const numericValue = manualIsNumeric
+    ? parsedManual
+    : Number(rawValue) || 0
+  const animated = useCountUp(numericValue)
+  const displayValue = hasManualValue && !manualIsNumeric
+    ? String(props.metricValue) // free-form text (non-numeric override)
+    : formatMetricValue(animated, props.numberFormat || 'comma', props.suffix || '')
+
+  const comparisonLabel = props.comparisonLabel || data?.comparisonLabel || 'vs Apr 1 - Apr 30, 2025'
+  const valueDelta = props.metricDelta
+    || formatComparisonValue(trendNum, props.comparisonFormat || 'percentage')
+  const titleText = props.title || meta.label
+
+  // Variant resolution + progress bar.
+  // 'stat-positive' is labeled "Progress Indicator" in the Left Panel,
+  // so it gets a progress bar by default when a target is set.
+  const isProgressVariant = type === 'stat-positive' || Number(props.targetValue) > 0
+  const targetVal = Number(props.targetValue) || 0
+  const progressPct = targetVal > 0
+    ? Math.max(0, Math.min(100, (numericValue / targetVal) * 100))
+    : 0
+
+  const s = Math.max(0.7, Math.min(2.5, scale || 1))
+  const iconBox = Math.round(48 * s)
+  const iconSize = Math.round(24 * s)
+  const titleSize = +(13 * s).toFixed(2)
+  const valueSize = +(26 * s).toFixed(2)
+  const subSize = +(11 * s).toFixed(2)
+  const trendSize = +(13 * s).toFixed(2)
+  const trendIconSize = Math.round(14 * s)
+  const padX = Math.round(18 * s)
+  const padY = Math.round(10 * s)
+  // Slightly larger top padding so the title clears the drag-handle row,
+  // but kept tight enough to avoid clipping the subtitle/trend at the bottom.
+  const padTop = Math.round(18 * s)
+
   return (
-    <div className="stat-block-render" style={{ '--sb-color': color }}>
-      <div className="sb-top">
-        <div className="sb-icon-wrap" style={{ background: `${color}14`, border: `1px solid ${color}28`, color: iconColor }}>
-          <Icon size={18} strokeWidth={2.1} color={iconColor} />
-        </div>
-        <div className="sb-value-wrap">
-          <span className="sb-value" style={{ color: props.valueColor || '#111827' }}>{displayValue}</span>
-          <div className="sb-trend" style={{ color: trendColor }}>
-            <TrendIcon size={11} strokeWidth={2.5} />
-            <span>{valueDelta}</span>
-          </div>
+    <div
+      className={`stat-block-render stat-block-render--modern${isProgressVariant && targetVal > 0 ? ' stat-block-render--has-progress' : ''}`}
+      style={{ '--sb-color': color, padding: `${padTop}px ${padX}px ${padY}px ${padX}px` }}
+    >
+      <div className="sb-modern-row">
+        <div className="sb-modern-left">
+          <span className="sb-modern-title" style={{ fontSize: titleSize }}>{titleText}</span>
+          <span
+            key={numericValue}
+            className="sb-modern-value sb-modern-value--animated"
+            style={{ color: props.valueColor || '#111827', fontSize: valueSize }}
+          >
+            {displayValue}
+          </span>
           {props.showComparison !== false && (
-            <span className="sb-comparison">{comparisonLabel}</span>
+            <span className="sb-modern-subtitle" style={{ fontSize: subSize }}>{comparisonLabel}</span>
+          )}
+        </div>
+        <div className="sb-modern-right" style={{ paddingTop: 0 }}>
+          <div
+            className="sb-icon-wrap"
+            style={{ background: `${color}1f`, border: 'none', color: iconColor, width: iconBox, height: iconBox }}
+          >
+            <Icon size={iconSize} strokeWidth={2.1} color={iconColor} />
+          </div>
+          {props.showTrend !== false && (
+            <div className="sb-modern-trend" style={{ color: trendColor, fontSize: trendSize }}>
+              <span className="sb-modern-trend-text">{valueDelta}</span>
+              <TrendIcon size={trendIconSize} strokeWidth={2.5} />
+            </div>
           )}
         </div>
       </div>
+
+      {isProgressVariant && targetVal > 0 && (
+        <div className="sb-progress" style={{ marginTop: Math.round(10 * s) }}>
+          <div className="sb-progress-track">
+            <div
+              className="sb-progress-fill"
+              style={{ width: `${progressPct}%`, background: color }}
+            />
+          </div>
+          <div className="sb-progress-meta" style={{ fontSize: Math.max(9, subSize - 1) }}>
+            <span>{progressPct.toFixed(1)}%</span>
+            <span>of {formatMetricValue(targetVal, props.numberFormat || 'comma', props.suffix || '')}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -677,12 +1173,23 @@ function renderChart(type, d, opts, blockId, layoutKey) {
   const chartStrokeWidth = Math.max(1, Math.round(Number(opts.strokeWidth ?? 2) * chartScale))
   const chartBarSize = Math.max(8, Math.round(Number(opts.barSize ?? 12) * chartScale))
   const chartRadius = Math.max(2, Math.round(Number(opts.barRadius ?? 4) * chartScale))
-  const ax = axisProps(chartFontSize)
+  const ax = axisProps(chartFontSize, opts.fontFamily, opts.fontWeight)
   const legendPosition = opts.legendPosition || 'bottom'
+  const legendOrientation = opts.legendOrientation || 'auto'
+  const legendAlign = opts.legendAlign || 'center'
   const legendItems = opts.showLegend ? buildLegendItems(type, opts, xKey, yKey, yKey2, extraYKeys, extraYLabels, extraYColors, d) : []
   const grid = opts.showGrid ? <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,179,237,0.18)" strokeWidth={1} /> : null
   const topRadius = [chartRadius, chartRadius, 0, 0]
-  const withLegend = (chartNode) => wrapChartWithLegend(chartNode, legendItems, legendPosition, chartFontSize)
+  const withLegend = (chartNode) => wrapChartWithLegend(
+    chartNode,
+    legendItems,
+    legendPosition,
+    chartFontSize,
+    legendOrientation,
+    legendAlign,
+    opts.fontFamily,
+    opts.fontWeight,
+  )
 
   switch (type) {
     case 'chart-bar':
@@ -798,7 +1305,7 @@ function renderChart(type, d, opts, blockId, layoutKey) {
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
-            <Bar dataKey={yKey} fill={opts.color} radius={[8, 8, 0, 0]} barSize={chartBarSize} />
+            <Bar dataKey={yKey} fill={opts.color} radius={topRadius} barSize={chartBarSize} />
             {yKey2 && (
               <Line type="monotone" dataKey={yKey2} stroke={opts.series2Color} strokeWidth={chartStrokeWidth} dot={opts.showDots ? chartDot(opts.series2Color, chartScale) : false} activeDot={opts.showDots ? { r: Math.max(4, Math.round(4.5 * chartScale)), stroke: '#fff', strokeWidth: 1.5 } : false} />
             )}
@@ -811,6 +1318,8 @@ function renderChart(type, d, opts, blockId, layoutKey) {
       )
 
     case 'chart-stackedarea':
+      {
+      const fillOpacity = Math.max(0.05, Math.min(0.8, opts.areaOpacity / 100))
       return (
         withLegend(
           <ResponsiveContainer key={layoutKey} width="100%" height="100%">
@@ -819,15 +1328,16 @@ function renderChart(type, d, opts, blockId, layoutKey) {
             <XAxis dataKey={xKey} tick={ax} axisLine={false} tickLine={false} />
             <YAxis tick={ax} axisLine={false} tickLine={false} />
             <Tooltip {...TOOLTIP_PROPS} />
-            <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={0.28} strokeWidth={chartStrokeWidth} />
-            {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.22} strokeWidth={chartStrokeWidth} />}
+            <Area type="monotone" dataKey={yKey} stackId="1" stroke={opts.color} fill={opts.color} fillOpacity={fillOpacity} strokeWidth={chartStrokeWidth} />
+            {yKey2 && <Area type="monotone" dataKey={yKey2} stackId="1" stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={Math.max(0.05, fillOpacity * 0.85)} strokeWidth={chartStrokeWidth} />}
             {extraYKeys.map((k, i) => (
-              <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={0.18} strokeWidth={chartStrokeWidth} />
+              <Area key={k} type="monotone" dataKey={k} name={extraYLabels[i]} stackId="1" stroke={extraYColors[i]} fill={extraYColors[i]} fillOpacity={Math.max(0.05, fillOpacity * 0.7)} strokeWidth={chartStrokeWidth} />
             ))}
           </AreaChart>
           </ResponsiveContainer>
         )
       )
+      }
 
     case 'chart-sparkline':
       return (
@@ -871,15 +1381,15 @@ function renderChart(type, d, opts, blockId, layoutKey) {
 
     case 'chart-donut': {
       const DONUT_COLORS = ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899']
-      const donutInner = clamp(Math.round(52 * chartScale), 40, 78)
-      const donutOuter = clamp(Math.round(85 * chartScale), donutInner + 8, 90)
+      const donutInner = clamp(Math.round(Number(opts.innerRadius ?? 52) * chartScale), 25, 85)
+      const donutOuter = clamp(Math.round(Number(opts.outerRadius ?? 85) * chartScale), donutInner + 6, 95)
       return (
         withLegend(
           <ResponsiveContainer key={layoutKey} width="100%" height="100%">
             <PieChart margin={getChartMargin('chart-donut')}>
               <Pie data={d} cx="50%" cy="50%"
                 innerRadius={`${donutInner}%`} outerRadius={`${donutOuter}%`}
-                dataKey="value" nameKey="label" paddingAngle={2}
+                dataKey="value" nameKey="label" paddingAngle={2} label={opts.pieLabel}
               >
                 {d.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
               </Pie>
@@ -892,29 +1402,53 @@ function renderChart(type, d, opts, blockId, layoutKey) {
 
     case 'chart-radialbar': {
       const palette = [opts.color, opts.series2Color, ...extraYColors, ...BASE_COLORS]
-      const radial = d.map((r, i) => ({ ...r, name: r[xKey], fill: palette[i % palette.length] }))
-      const radialInner = clamp(Math.round(Number(opts.innerRadius ?? 30) * chartScale), 18, 78)
+      const sorted = [...d]
+        .map((r) => ({ ...r, _val: Number(r[yKey]) || 0 }))
+        .sort((a, b) => b._val - a._val)
+        .slice(0, 8)
+      const radial = sorted.map((r, i) => ({
+        ...r,
+        name: r[xKey],
+        fill: palette[i % palette.length],
+      }))
+      const radialInner = clamp(Math.round(Number(opts.innerRadius ?? 20) * chartScale), 10, 50)
       const radialOuter = clamp(
-        Math.max(radialInner + 15, Math.round(Number(opts.outerRadius ?? 55) * chartScale)),
-        radialInner + 15,
-        90,
+        Math.max(radialInner + 30, Math.round(Number(opts.outerRadius ?? 95) * chartScale)),
+        radialInner + 30,
+        100,
+      )
+      const ringCount = Math.max(radial.length, 1)
+      const radialBarSize = Math.max(
+        4,
+        Math.min(chartBarSize + 2, Math.floor(140 / ringCount))
       )
       return (
         withLegend(
           <ResponsiveContainer key={layoutKey} width="100%" height="100%">
             <RadialBarChart
               cx="50%"
-              cy="60%"
+              cy="50%"
               innerRadius={`${radialInner}%`}
               outerRadius={`${radialOuter}%`}
-              barSize={Math.max(10, chartBarSize)}
+              barSize={radialBarSize}
               data={radial}
-              startAngle={180}
-              endAngle={0}
+              startAngle={90}
+              endAngle={-270}
               margin={getChartMargin('chart-radialbar')}
             >
-              <RadialBar minAngle={15} background clockWise dataKey={yKey}
-                label={{ position: 'insideStart', fill: '#334155', fontSize: Math.max(9, chartFontSize - 1) }}
+              <RadialBar
+                minAngle={4}
+                background={{ fill: 'rgba(148,163,184,0.18)' }}
+                clockWise
+                dataKey={yKey}
+                cornerRadius={Math.min(radialBarSize / 2, chartRadius + 2)}
+                label={{
+                  position: 'insideEnd',
+                  fill: '#ffffff',
+                  fontSize: Math.max(9, chartFontSize - 1),
+                  fontWeight: 600,
+                  formatter: (v) => v,
+                }}
               />
               <Tooltip {...TOOLTIP_PROPS} />
             </RadialBarChart>
@@ -934,11 +1468,11 @@ function renderChart(type, d, opts, blockId, layoutKey) {
           <ResponsiveContainer key={layoutKey} width="100%" height="100%">
             <RadarChart data={radarData} margin={getChartMargin('chart-radar')}>
               <PolarGrid stroke="rgba(99,179,237,0.12)" />
-              <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b' }} />
+              <PolarAngleAxis dataKey={xKey} tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#64748b', fontFamily: opts.fontFamily, fontWeight: opts.fontWeight }} />
               <PolarRadiusAxis tick={false} axisLine={false} />
               <Tooltip {...TOOLTIP_PROPS} />
-              <Radar dataKey={yKey} stroke={opts.color} fill={opts.color} fillOpacity={0.22} />
-              {yKey2 && <Radar dataKey={yKey2} stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={0.18} />}
+              <Radar dataKey={yKey} stroke={opts.color} fill={opts.color} fillOpacity={Math.max(0.05, Math.min(0.8, opts.areaOpacity / 100))} />
+              {yKey2 && <Radar dataKey={yKey2} stroke={opts.series2Color} fill={opts.series2Color} fillOpacity={Math.max(0.05, Math.min(0.8, (opts.areaOpacity / 100) * 0.82))} />}
             </RadarChart>
           </ResponsiveContainer>
         )
@@ -972,9 +1506,9 @@ function renderChart(type, d, opts, blockId, layoutKey) {
             <BarChart data={d} layout="vertical" margin={getChartMargin('chart-hbar')}>
               {grid}
               <XAxis type="number" tick={ax} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467' }} axisLine={false} tickLine={false} width={100} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: Math.max(9, chartFontSize - 1), fill: '#475467', fontFamily: opts.fontFamily, fontWeight: opts.fontWeight }} axisLine={false} tickLine={false} width={100} />
               <Tooltip {...TOOLTIP_PROPS} />
-              <Bar dataKey={yKey} radius={[0, 4, 4, 0]} barSize={chartBarSize}>
+              <Bar dataKey={yKey} radius={[0, chartRadius, chartRadius, 0]} barSize={chartBarSize}>
                 {d.map((_, i) => <Cell key={i} fill={HBAR_COLORS[i % HBAR_COLORS.length]} />)}
               </Bar>
             </BarChart>
@@ -999,41 +1533,13 @@ function renderChart(type, d, opts, blockId, layoutKey) {
       )
 
     case 'advanced-table':
+      return <AdvancedTable rows={d} fontSize={opts.fontSize} />
+
     case 'pivot-table':
-    case 'table': {
-      const pageSize = 5
-      const pageData = d.slice(0, pageSize)
-      const totalPages = Math.ceil(d.length / pageSize)
-      return (
-        <div className="pt-wrap">
-          <table className="pt-table" style={{ fontSize: Math.max(9, opts.fontSize - 1) }}>
-            <thead><tr>{['Drive Name', 'Location', 'Date', 'Patients Screened', 'Positive Cases', 'Referred', 'Actions'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
-            <tbody>
-              {pageData.map((p, i) => (
-                <tr key={p.id || i}>
-                  <td style={{ color: '#1e40af', fontWeight: 500 }}>{p.name}</td>
-                  <td>{p.location}</td>
-                  <td>{p.date}</td>
-                  <td>{p.screened?.toLocaleString()}</td>
-                  <td>{p.positive}</td>
-                  <td>{p.referred}</td>
-                  <td><span style={{ cursor: 'pointer', color: '#64748b' }}>ðŸ‘</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="pt-pagination">
-            <span className="pt-page-info">Showing 1 to {Math.min(pageSize, d.length)} of {d.length} drives</span>
-            <div className="pt-page-btns">
-              {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
-                <button key={i} className={`pt-page-btn${i === 0 ? ' active' : ''}`}>{i + 1}</button>
-              ))}
-              {totalPages > 3 && <span className="pt-page-btn">â€º</span>}
-            </div>
-          </div>
-        </div>
-      )
-    }
+      return <PivotTable rows={d} fontSize={opts.fontSize} />
+
+    case 'table':
+      return <BasicTable rows={d} fontSize={opts.fontSize} />
 
     default:
       return <div style={{ color: '#475569', fontSize: 11, padding: 16 }}>Unknown block type: {type}</div>
@@ -1044,6 +1550,23 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+
+  const openMenuFromEvent = useCallback((e) => {
+    e.stopPropagation()
+    if (menuOpen) { setMenuOpen(false); return }
+    const r = e.currentTarget.getBoundingClientRect()
+    const menuW = 170
+    const gap = 6
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 768
+    let left = r.right + gap
+    if (left + menuW > vw - 8) left = Math.max(8, r.left - menuW - gap)
+    let top = r.top
+    if (top + 160 > vh - 8) top = Math.max(8, vh - 168)
+    setMenuPos({ top, left })
+    setMenuOpen(true)
+  }, [menuOpen])
 
   const isStatBlock = block.type.startsWith('stat-') || block.type === 'num' || block.type === 'kpi-card'
   const isLayoutBlock = String(block.type || '').startsWith('layout-')
@@ -1067,6 +1590,11 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
   ), [block.props?.data, block.type, data])
 
   const props = useMemo(() => ({
+    // Spread the raw block props first so any extra fields (iconKey,
+    // metricKey, targetValue, trendValue, numberFormat, suffix, itemColor,
+    // iconColor, showTrend, showComparison, comparisonFormat, valueColor,
+    // increaseColor, decreaseColor, etc.) flow through to the renderer.
+    ...(block.props || {}),
     title: block.props?.title || base.title,
     subtitle: block.props?.subtitle ?? base.subtitle,
     color: block.props?.color || base.color,
@@ -1077,6 +1605,8 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
     showDots: block.props?.showDots ?? true,
     pieLabel: block.props?.pieLabel ?? false,
     legendPosition: block.props?.legendPosition || 'bottom',
+    legendOrientation: block.props?.legendOrientation || 'auto',
+    legendAlign: block.props?.legendAlign || 'center',
     fontSize: scaledFontSize(block.props?.fontSize ?? 11, scale, 8, 42),
     headingFontSize: scaledFontSize(block.props?.headingFontSize ?? block.props?.fontSize ?? 11, scale, 8, 72),
     chartScale: Number(block.props?.chartScale ?? 100),
@@ -1127,41 +1657,39 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
       onClick={isPreviewMode ? undefined : onSelect}
     >
       <div className="card-accent" style={{ background: `linear-gradient(90deg,${props.color},${props.color}44)` }} />
-      <div className="card-header" style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 14px 4px 14px', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="card-header" style={{ display: 'flex', alignItems: 'flex-start', padding: isStatBlock ? '4px 6px 0 6px' : '12px 14px 4px 14px', justifyContent: 'space-between', position: isStatBlock ? 'absolute' : 'static', top: isStatBlock ? 0 : undefined, left: isStatBlock ? 0 : undefined, right: isStatBlock ? 0 : undefined, zIndex: isStatBlock ? 5 : undefined, pointerEvents: isStatBlock ? 'none' : undefined }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'auto' }}>
           {!isPreviewMode && (
             <div className="block-drag-handle" style={{ cursor: 'grab', color: '#cbd5e1', display: 'flex', alignItems: 'center', marginTop: '2px' }} title="Drag to move" onMouseDown={onDragStart}>
               <GripVertical size={14} />
             </div>
           )}
+          {!isStatBlock && (
           <div>
             <div className="card-title-row" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-              <span className="card-title" style={{ fontSize: props.headingFontSize, fontWeight: 600, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.18, overflowWrap: 'anywhere' }}>
+              <span className="card-title" style={{ fontSize: props.headingFontSize, fontWeight: props.fontWeight, color: '#344054', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: 1.18, overflowWrap: 'anywhere' }}>
                 {props.title}
               </span>
             </div>
-            {props.subtitle && <p className="card-subtitle" style={{ fontSize: scaledFontSize(Math.max(9, Number(block.props?.headingFontSize ?? block.props?.fontSize ?? 11) - 1), scale, 8, 56), margin: 0, color: '#64748b', lineHeight: 1.25, overflowWrap: 'anywhere' }}>{props.subtitle}</p>}
+            {props.subtitle && <p className="card-subtitle" style={{ fontSize: scaledFontSize(Math.max(9, Number(block.props?.headingFontSize ?? block.props?.fontSize ?? 11) - 1), scale, 8, 56), margin: 0, color: '#64748b', lineHeight: 1.25, overflowWrap: 'anywhere', fontWeight: props.fontWeight }}>{props.subtitle}</p>}
           </div>
-        </div>
-        <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-          {!isPreviewMode && isStatBlock && (
-            <button className="card-action-btn edit" onClick={(e) => e.stopPropagation()} title="Edit" style={{ background: 'transparent', border: '1px solid transparent', cursor: 'pointer', color: '#98a2b3', padding: '4px', display: 'flex' }}>
-              <Pencil size={13} />
-            </button>
           )}
+        </div>
+        <div className="card-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative', pointerEvents: 'auto' }}>
+
           {!isPreviewMode && (
-            <button className="card-action-btn dup" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
+            <button className="card-action-btn dup" onClick={openMenuFromEvent} title="More options" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}>
               <MoreVertical size={13} />
             </button>
           )}
 
-          {menuOpen && !isPreviewMode && (
+          {menuOpen && !isPreviewMode && typeof document !== 'undefined' && createPortal(
             <>
               <div
-                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
                 onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }}
               />
-              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: '#fff', border: '1px solid #d0d5dd', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', zIndex: 500, minWidth: '140px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, background: '#fff', border: '1px solid #d0d5dd', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', zIndex: 9999, minWidth: '160px', display: 'flex', flexDirection: 'column' }}>
                 <div
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#344054', borderBottom: '1px solid #f2f4f7', boxSizing: 'border-box' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
@@ -1187,14 +1715,15 @@ export default function CanvasBlock({ block, data, selected, onRemove, onDuplica
                   <Trash size={15} style={{ color: '#d92d20' }} /> Delete
                 </div>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
       <div className={`card-body${isStatBlock ? ' card-body--stat' : ''}`}>
         <div className="card-body-content" key={layoutKey}>
           {isStatBlock ? (
-            renderStatBlock(block.type, data, props)
+            <StatBlock type={block.type} data={data} props={props} scale={scale} />
           ) : String(block.type || '').startsWith('layout-')
             ? renderLayoutBlock(block.type, props)
             : renderChart(block.type, liveData, props, block.id, layoutKey)}

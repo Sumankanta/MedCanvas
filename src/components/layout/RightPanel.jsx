@@ -39,7 +39,6 @@ const GROUPS = [
       { type: 'chart-area',         name: 'Area Chart',         Icon: LineChart },
       { type: 'chart-combo',        name: 'Combo Chart',        Icon: BarChart3 },
       { type: 'chart-stackedarea',   name: 'Stacked Area',       Icon: LineChart },
-      { type: 'chart-sparkline',    name: 'Sparkline',          Icon: LineChart },
       { type: 'chart-radar',        name: 'Radar Chart',        Icon: Radar },
       { type: 'chart-pie',          name: 'Pie Chart',          Icon: PieChart },
       { type: 'chart-donut',        name: 'Donut Chart',        Icon: PieChart },
@@ -116,7 +115,13 @@ export default function RightPanel({ side = 'right', open = true, onAddBlock, on
           placeholder="Search widgets..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery('') }}
         />
+        {searchQuery && (
+          <button className="widget-search-clear" onClick={() => setSearchQuery('')} title="Clear search">
+            <X size={12} />
+          </button>
+        )}
       </div>
 
       <div className="panel-body widgets-body">
@@ -137,10 +142,12 @@ export default function RightPanel({ side = 'right', open = true, onAddBlock, on
         ))}
       </div>
 
-      <div className="widget-drop-help">
-        <GripVertical size={18} />
-        <span>Drag widgets to design your dashboard</span>
-      </div>
+      {!searchQuery && (
+        <div className="widget-drop-help">
+          <GripVertical size={18} />
+          <span>Drag widgets to design your dashboard</span>
+        </div>
+      )}
     </aside>
   )
 }

@@ -5,7 +5,6 @@ export const BLOCK_TYPES = [
   { type: 'chart-area',       label: 'Area Chart',        desc: 'Filled trend view',      icon: '🏔', color: '#06b6d4' },
   { type: 'chart-combo',      label: 'Combo Chart',       desc: 'Bars with trend line',   icon: '📊', color: '#14b8a6' },
   { type: 'chart-stackedarea',label: 'Stacked Area',      desc: 'Layered distribution',   icon: '🏔', color: '#0ea5e9' },
-  { type: 'chart-sparkline',  label: 'Sparkline',         desc: 'Compact trend summary',  icon: '➖', color: '#22c55e' },
   { type: 'chart-radar',      label: 'Radar Chart',       desc: 'Multi-metric profile',   icon: '🎯', color: '#a855f7' },
   { type: 'chart-pie',        label: 'Pie Chart',         desc: 'Outcome breakdown',      icon: '🥧', color: '#f59e0b' },
   { type: 'chart-donut',      label: 'Donut Chart',       desc: 'Test type split',        icon: '🍩', color: '#ec4899' },
